@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f161c">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icon-512.png">
-
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Planejamento Financeiro Completo</title>
@@ -69,9 +63,10 @@ button, input, select { font: inherit; color: var(--ink); }
 .cd small { color: var(--mut); display: block; font-size: 12px; }
 .cd b { font-size: 19px; }
 .big { background: var(--card); border: 2px solid var(--v); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
-.warn, .okb { border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 14px; border: 1px solid; line-height: 1.4; }
+.warn, .okb, .alert-box { border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 14px; border: 1px solid; line-height: 1.4; }
 .warn { color: var(--bad); border-color: var(--bad); background: rgba(179,38,30,0.05); }
 .okb { color: var(--ok); border-color: var(--ok); background: rgba(29,122,62,0.05); }
+.alert-box { color: #d97706; border-color: #d97706; background: rgba(217,119,6,0.08); font-weight: 700; }
 .row { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 11px; margin-bottom: 8px; width: 100%; text-align: left; cursor: pointer; }
 .row.done { opacity: .55; }
 .chk { width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--mut); flex: none; display: grid; place-items: center; font-weight: 700; color: #fff; font-size: 14px; }
@@ -81,7 +76,7 @@ button, input, select { font: inherit; color: var(--ink); }
 .amt { font-weight: 700; }
 .amt.in { color: var(--ok); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
-.card input, .card select, .fld input { width: 100%; padding: 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); margin-top: 4px; }
+.card input, .card select, .fld input, .fld select { width: 100%; padding: 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); margin-top: 4px; }
 .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 label { font-size: 13px; color: var(--mut); font-weight: 700; }
 .add, .del { padding: 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); width: 100%; font-weight: 700; margin-top: 8px; cursor: pointer; }
@@ -125,6 +120,7 @@ label { font-size: 13px; color: var(--mut); font-weight: 700; }
 </head>
 <body>
 <h1>Planejamento Completo</h1>
+<div style="margin-bottom: 10px;"><button class="add" data-a="notif" id="btn-notif" style="margin-top:0;background:var(--card);color:var(--ink);">🔔 Ativar Lembretes de Vencimento</button></div>
 <div class="tabs" id="tabs"></div>
 <div id="view"></div>
 
@@ -133,26 +129,24 @@ var KEY = "plano-v2",
     MS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],
     WN = ["dom","seg","ter","qua","qui","sex","sáb"],
     tab = 0, selDay = 0,
+    currentYM = new Date().getFullYear() + "-" + ("0" + (new Date().getMonth() + 1)).slice(-2),
     S = {
-      ym: "2026-11",
-      dia: 80,
-      dias: [2,3,4,5,6], // Terça a Sábado
+      ym: currentYM,
+      tipoRenda: "diaria",
+      dia: 0,
+      dias: [1,2,3,4,5],
+      valQuinzena: 0,
+      diaQ1: 5,
+      diaQ2: 20,
+      valMes: 0,
+      diaMes: 5,
       ini: {},
       paid: {},
       gp: {},
       rp: {},
       carry: false,
-      ex: [{id:"x1", n:"Bolsa Família", a:300, d:20, i:"2026-11"}],
-      bills: [
-        {id:"b1", n:"Aluguel", a:450, d:20, t:"m", i:"2026-11", f:""},
-        {id:"b2", n:"Internet", a:120, d:18, t:"m", i:"2026-11", f:""},
-        {id:"b3", n:"Bicicleta", a:80, d:28, t:"m", i:"2026-11", f:""},
-        {id:"b4", n:"Perfume", a:50, d:5, t:"m", i:"2026-11", f:""},
-        {id:"b5", n:"Empréstimo", a:240, d:28, t:"m", i:"2026-11", f:"2026-11"},
-        {id:"b6", n:"Banco B", a:181.20, d:14, t:"m", i:"2026-11", f:"2026-11"},
-        {id:"b7", n:"Picpay", a:173.90, d:20, t:"m", i:"2026-11", f:"2026-11"},
-        {id:"b8", n:"Uber da filha", a:65, d:1, t:"s", i:"2026-11", f:""}
-      ]
+      ex: [],
+      bills: []
     };
 
 try {
@@ -164,8 +158,16 @@ function fix() {
   S.rp = S.rp || {};
   S.paid = S.paid || {};
   S.gp = S.gp || {};
-  S.bills.forEach(function(b){ if(!b.i) b.i="2026-11"; });
-  S.ex.forEach(function(x){ if(!x.i) x.i="2026-11"; });
+  if (!S.tipoRenda) S.tipoRenda = "diaria";
+  if (S.valQuinzena === undefined) S.valQuinzena = 0;
+  if (S.diaQ1 === undefined) S.diaQ1 = 5;
+  if (S.diaQ2 === undefined) S.diaQ2 = 20;
+  if (S.valMes === undefined) S.valMes = 0;
+  if (S.diaMes === undefined) S.diaMes = 5;
+  S.bills = S.bills || [];
+  S.ex = S.ex || [];
+  S.bills.forEach(function(b){ if(!b.i) b.i = S.ym; });
+  S.ex.forEach(function(x){ if(!x.i) x.i = S.ym; });
 }
 fix();
 
@@ -179,7 +181,7 @@ function inp(sc, id, f, v, ty) {
   return '<input data-s="'+sc+'" data-i="'+id+'" data-f="'+f+'" type="'+ty+'" value="'+String(v).replace(/"/g,"&quot;")+'"'+(ty=="number"?' step="0.01" inputmode="decimal"':'')+'>';
 }
 
-var START = "2026-11";
+var START = S.ym;
 function prevYM(ym) {
   var p = ym.split("-"), d = new Date(+p[0], +p[1]-2, 1);
   return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
@@ -207,33 +209,59 @@ function calc() {
       ex = XS().reduce(function(s, x){ return s + x.a; }, 0),
       wk = S.dias.length || 1, tot = 0, ud = 0;
   L.forEach(function(b){ if (b.t == "s") { tot += b.a * w / wk; ud += b.a / wk; } else tot += b.a; });
-  var g = w ? Math.min(S.dia, Math.max(0, Math.ceil((tot - ex) * 1.2 / w))) : 0,
-      bal = ini0(), min = bal, md = 0;
+  
+  var principalRendaTotal = 0;
+  if (S.tipoRenda === "diaria") principalRendaTotal = S.dia * w;
+  else if (S.tipoRenda === "quinzena") principalRendaTotal = S.valQuinzena * 2;
+  else if (S.tipoRenda === "mes") principalRendaTotal = S.valMes;
+
+  var g = 0;
+  if (S.tipoRenda === "diaria") {
+    g = w ? Math.min(S.dia, Math.max(0, Math.ceil((tot - ex) * 1.2 / w))) : 0;
+  }
+  
+  var bal = ini0(), min = bal, md = 0;
   for (d = 1; d <= N; d++) {
-    if (wd[d]) bal += g - ud;
+    if (S.tipoRenda === "diaria" && wd[d]) bal += g - ud;
+    if (S.tipoRenda === "quinzena" && (d === Math.min(S.diaQ1, N) || d === Math.min(S.diaQ2, N))) {
+      bal += S.valQuinzena;
+    }
+    if (S.tipoRenda === "mes" && d === Math.min(S.diaMes, N)) {
+      bal += S.valMes;
+    }
     XS().forEach(function(x){ if (Math.min(x.d, N) == d) bal += x.a; });
     L.forEach(function(b){ if (b.t != "s" && Math.min(b.d || 1, N) == d) bal -= b.a; });
     if (bal < min) { min = bal; md = d; }
   }
   
-  // Desconto automático reativo: garante que se a data mudar para antes do acúmulo de diárias,
-  // a cobertura é ajustada imediatamente puxando da sobra em mãos para o pote não negativar.
   var cobrir = 0;
-  if (min < 0) {
-    cobrir = Math.abs(min);
-  }
+  if (min < 0) { cobrir = Math.abs(min); }
   
-  return { Y: Y, M: M, N: N, w: w, L: L, inc: S.dia * w + ex, tot: tot, g: g, min: min, md: md, wk: wk, ud: ud, cobrir: cobrir };
+  return { Y: Y, M: M, N: N, w: w, L: L, inc: principalRendaTotal + ex, tot: tot, g: g, min: min, md: md, wk: wk, ud: ud, cobrir: cobrir };
 }
 
 function RS(c) {
   var pg = 0, en = 0, nd = 0, q0,
       LT = c.L.filter(function(b){ return S.rp[S.ym] || !b.i || b.i == S.ym; }),
-      XTT = XT(), tT = 0, iT = S.dia * c.w;
+      XTT = XT(), tT = 0, iT = 0;
+
+  if (S.tipoRenda === "diaria") iT = S.dia * c.w;
+  else if (S.tipoRenda === "quinzena") iT = S.valQuinzena * 2;
+  else if (S.tipoRenda === "mes") iT = S.valMes;
+
   LT.forEach(function(b){ tT += b.t == "s" ? b.a * c.w / c.wk : b.a; });
   XTT.forEach(function(x){ iT += x.a; });
-  for (q0 = 1; q0 <= c.N; q0++) if (S.dias.indexOf(new Date(c.Y, c.M-1, q0).getDay()) >= 0 && S.paid[S.ym + "d" + q0]) nd++;
-  en = nd * S.dia;
+
+  if (S.tipoRenda === "diaria") {
+    for (q0 = 1; q0 <= c.N; q0++) if (S.dias.indexOf(new Date(c.Y, c.M-1, q0).getDay()) >= 0 && S.paid[S.ym + "d" + q0]) nd++;
+    en = nd * S.dia;
+  } else if (S.tipoRenda === "quinzena") {
+    if (S.paid[S.ym + "q1"]) en += S.valQuinzena;
+    if (S.paid[S.ym + "q2"]) en += S.valQuinzena;
+  } else if (S.tipoRenda === "mes") {
+    if (S.paid[S.ym + "mes1"]) en += S.valMes;
+  }
+
   XTT.forEach(function(x){ if (S.paid[S.ym + x.id]) en += x.a; });
   LT.forEach(function(b){ if (b.t == "s") pg += nd * b.a / c.wk; else if (S.paid[S.ym + b.id]) pg += b.a; });
   return { pg: pg, en: en, nd: nd, tT: tT, iT: iT };
@@ -249,6 +277,24 @@ function mao(ym) {
 function vMes() {
   var c = calc(),
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
+  
+  // Verificação de alertas para o dia de hoje
+  var td = new Date();
+  var isCurrentMonth = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M;
+  if (isCurrentMonth) {
+    var hojeD = td.getDate();
+    var avisosHoje = [];
+    c.L.forEach(function(b){
+      if (b.t !== "s" && b.d === hojeD) avisosHoje.push("Conta a vencer hoje: " + b.n + " (" + R(b.a) + ")");
+    });
+    XS().forEach(function(x){
+      if (x.d === hojeD) avisosHoje.push("Renda a cair hoje: " + x.n + " (" + R(x.a) + ")");
+    });
+    if (avisosHoje.length > 0) {
+      h += '<div class="alert-box">🔔 <b>Avisos para hoje:</b><br>' + avisosHoje.join("<br>") + '</div>';
+    }
+  }
+
   var rs = RS(c), pg = rs.pg, en = rs.en, nd = rs.nd, tT = rs.tT, iT = rs.iT, mc = mao(S.ym), fl = Math.max(0, tT - pg);
   
   var sobraEmMaosLiquida = (mc + en - pg) - c.cobrir;
@@ -262,14 +308,21 @@ function vMes() {
        '<div class="cd"><small>Entrou até agora</small><b>' + R(en) + '</b></div>' +
        '<div class="cd"><small>Sobra em mãos</small><b style="color:var(--v)">' + R(sobraEmMaosLiquida) + '</b></div>' +
        '</div>' +
-       '<div class="note">Previsão de sobra no fim do mês: <b>' + R(mc + iT - tT) + '</b> · ' + nd + ' de ' + c.w + ' diárias marcadas' +
+       '<div class="note">Previsão de sobra no fim do mês: <b>' + R(mc + iT - tT) + '</b>' +
+       (S.tipoRenda === "diaria" ? ' · ' + nd + ' de ' + c.w + ' diárias marcadas' : '') +
        (Math.abs(mc) > 0.005 ? '<br>Inclui ' + R(mc) + ' que sobrou dos meses anteriores.' : '') + '</div>';
 
   h += '<button class="add" data-a="rep" style="margin:0 0 10px">' +
        (S.rp[S.ym] ? "✓ Resumo de cima inclui contas e rendas dos meses anteriores (toque pra desligar)" : "Incluir contas e rendas dos meses anteriores no resumo de cima (desligado)") +
        '</button>';
 
-  h += '<div class="big">Em cada diária de ' + R(S.dia) + ': separe <b>' + R(c.g) + '</b> pro pote das contas e fique com <b>' + R(S.dia - c.g) + '</b> pra você.<small style="display:block;color:var(--mut);font-size:12px;margin-top:4px">Já inclui 20% de folga pro mês que vem.</small></div>';
+  if (S.tipoRenda === "diaria") {
+    h += '<div class="big">Em cada diária de ' + R(S.dia) + ': separe <b>' + R(c.g) + '</b> pro pote das contas e fique com <b>' + R(S.dia - c.g) + '</b> pra você.<small style="display:block;color:var(--mut);font-size:12px;margin-top:4px">Já inclui 20% de folga pro mês que vem.</small></div>';
+  } else if (S.tipoRenda === "quinzena") {
+    h += '<div class="big">Renda Quinzenal: Cada quinzena entra <b>' + R(S.valQuinzena) + '</b> (dias ' + S.diaQ1 + ' e ' + S.diaQ2 + ').</div>';
+  } else if (S.tipoRenda === "mes") {
+    h += '<div class="big">Salário Mensal: Entra <b>' + R(S.valMes) + '</b> no dia ' + S.diaMes + '.</div>';
+  }
 
   if (c.cobrir > 0) {
     h += '<div class="okb" style="border-color:var(--v);color:var(--v);background:rgba(58,91,217,0.08)">' +
@@ -278,9 +331,9 @@ function vMes() {
     h += '<div class="okb">O pote das contas aguenta todos os pagamentos do mês perfeitamente.</div>';
   }
 
-  var td = new Date(), hj = td.getFullYear() == c.Y && td.getMonth() + 1 == c.M && S.dias.indexOf(td.getDay()) >= 0;
-  if (hj) {
-    h += '<div class="big">Hoje (' + WN[td.getDay()] + ' ' + td.getDate() + '): ao receber a diária, separe <b>' + R(c.g - c.ud) + '</b> pro pote das contas, <b>' + R(c.ud) + '</b> pro Uber e fique com <b>' + R(S.dia - c.g) + '</b>.</div>';
+  var hj = isCurrentMonth && S.dias.indexOf(td.getDay()) >= 0;
+  if (hj && S.tipoRenda === "diaria" && S.dia > 0) {
+    h += '<div class="big">Hoje (' + WN[td.getDay()] + ' ' + td.getDate() + '): ao receber a diária, separe <b>' + R(c.g - c.ud) + '</b> pro pote das contas e fique com <b>' + R(S.dia - c.g) + '</b>.</div>';
   }
 
   var cy = carry(S.ym);
@@ -291,18 +344,41 @@ function vMes() {
   h += S.carry ? '<div class="note">Veio do mês anterior: pote ' + R(cy.p) + ' · pra mim ' + R(cy.m) + '</div>'
               : '<div class="card fld"><label>Começar o mês com este valor no pote (R$)</label>' + inp("c","0","ini",S.ini[S.ym]||0,"number") + '</div>';
 
-  h += '<div class="note"><b>Separar a cada diária</b><br>Ao receber o dinheiro de cada dia, separe assim e toque pra marcar.</div>';
-  
-  for (var q = 1; q <= c.N; q++) {
-    if (S.dias.indexOf(new Date(c.Y, c.M-1, q).getDay()) < 0) continue;
-    var dn2 = S.paid[S.ym + "d" + q];
-    h += '<button class="row' + (dn2 ? " done" : "") + '" data-a="tog" data-i="d' + q + '">' +
-         '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>' + WN[new Date(c.Y, c.M-1, q).getDay()] + ' ' + q + '</b><small>Contas ' + R(c.g - c.ud) + ' · Uber ' + R(c.ud) + ' · Você ' + R(S.dia - c.g) + '</small></span>' +
-         '</button>';
+  if (S.tipoRenda === "diaria" && S.dia > 0) {
+    h += '<div class="note"><b>Separar a cada diária</b><br>Ao receber o dinheiro de cada dia, separe assim e toque pra marcar.</div>';
+    for (var q = 1; q <= c.N; q++) {
+      if (S.dias.indexOf(new Date(c.Y, c.M-1, q).getDay()) < 0) continue;
+      var dn2 = S.paid[S.ym + "d" + q];
+      h += '<button class="row' + (dn2 ? " done" : "") + '" data-a="tog" data-i="d' + q + '">' +
+           '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
+           '<span class="grow"><b>' + WN[new Date(c.Y, c.M-1, q).getDay()] + ' ' + q + '</b><small>Contas ' + R(c.g - c.ud) + ' · Você ' + R(S.dia - c.g) + '</small></span>' +
+           '</button>';
+    }
+  } else if (S.tipoRenda === "quinzena" && S.valQuinzena > 0) {
+    h += '<div class="note"><b>Recebimentos da Quinzena</b></div>';
+    var q1Done = S.paid[S.ym + "q1"], q2Done = S.paid[S.ym + "q2"];
+    h += '<button class="row' + (q1Done ? " done" : "") + '" data-a="tog" data-i="q1">' +
+         '<span class="chk">' + (q1Done ? "✓" : "") + '</span>' +
+         '<span class="grow"><b>1ª Quinzena (Dia ' + S.diaQ1 + ')</b><small>Recebimento quinzenal</small></span>' +
+         '<span class="amt in">+' + R(S.valQuinzena) + '</span></button>';
+    h += '<button class="row' + (q2Done ? " done" : "") + '" data-a="tog" data-i="q2">' +
+         '<span class="chk">' + (q2Done ? "✓" : "") + '</span>' +
+         '<span class="grow"><b>2ª Quinzena (Dia ' + S.diaQ2 + ')</b><small>Recebimento quinzenal</small></span>' +
+         '<span class="amt in">+' + R(S.valQuinzena) + '</span></button>';
+  } else if (S.tipoRenda === "mes" && S.valMes > 0) {
+    h += '<div class="note"><b>Salário Mensal</b></div>';
+    var mDone = S.paid[S.ym + "mes1"];
+    h += '<button class="row' + (mDone ? " done" : "") + '" data-a="tog" data-i="mes1">' +
+         '<span class="chk">' + (mDone ? "✓" : "") + '</span>' +
+         '<span class="grow"><b>Salário (Dia ' + S.diaMes + ')</b><small>Recebimento mensal fixo</small></span>' +
+         '<span class="amt in">+' + R(S.valMes) + '</span></button>';
   }
 
   h += '<div class="note"><b>Pagamentos do mês</b></div>';
+  if (c.L.length === 0 && XS().length === 0) {
+    h += '<div class="card" style="text-align:center;color:var(--mut);padding:16px;">Nenhuma conta ou renda extra cadastrada. Vá na aba <b>Contas</b> ou <b>Renda</b> para adicionar.</div>';
+  }
+
   var it = [];
   c.L.forEach(function(b){
     if (b.t == "s") it.push({ d: 99, n: b.n, a: b.a * c.w / c.wk, s: R(b.a) + " por semana, separe todo dia", id: b.id, w: 1 });
@@ -325,7 +401,10 @@ function vMes() {
 }
 
 function vContas() {
-  var h = '<p class="note">Edite à vontade. Qualquer alteração de valor ou dia recalcula o planejamento do mês inteiro automaticamente!</p>';
+  var h = '<p class="note">Adicione as suas contas mensais ou semanais. O planeamento recalcula tudo automaticamente!</p>';
+  if (S.bills.length === 0) {
+    h += '<div class="card" style="text-align:center;color:var(--mut);padding:16px;">Nenhuma conta cadastrada ainda.</div>';
+  }
   S.bills.forEach(function(b){
     h += '<div class="card">' + inp("b", b.id, "n", b.n, "text") +
          '<div class="g2">' +
@@ -342,12 +421,35 @@ function vContas() {
 }
 
 function vRenda() {
-  var h = '<div class="card fld"><label>Valor da diária (R$)</label>' + inp("c","0","dia",S.dia,"number") + '</div>' +
-          '<label>Dias em que você trabalha</label><div class="wds">';
-  [1,2,3,4,5,6,0].forEach(function(i){
-    h += '<button class="' + (S.dias.indexOf(i)>=0 ? "on" : "") + '" data-a="wd" data-i="' + i + '">' + WN[i] + '</button>';
-  });
-  h += '</div><label>Outras rendas por mês (Bolsa Família etc.)</label>';
+  var h = '<div class="card fld"><label>Como você recebe sua renda principal?</label>' +
+          '<select data-s="c" data-i="0" data-f="tipoRenda">' +
+          '<option value="diaria"' + (S.tipoRenda==="diaria"?" selected":"") + '>Por Diária (Dias da semana)</option>' +
+          '<option value="quinzena"' + (S.tipoRenda==="quinzena"?" selected":"") + '>Por Quinzena (A cada 15 dias)</option>' +
+          '<option value="mes"' + (S.tipoRenda==="mes"?" selected":"") + '>Por Mês (Fixo mensal)</option>' +
+          '</select></div>';
+
+  if (S.tipoRenda === "diaria") {
+    h += '<div class="card fld"><label>Valor da diária (R$)</label>' + inp("c","0","dia",S.dia,"number") + '</div>' +
+         '<label>Dias em que você trabalha</label><div class="wds">';
+    [1,2,3,4,5,6,0].forEach(function(i){
+      h += '<button class="' + (S.dias.indexOf(i)>=0 ? "on" : "") + '" data-a="wd" data-i="' + i + '">' + WN[i] + '</button>';
+    });
+    h += '</div>';
+  } else if (S.tipoRenda === "quinzena") {
+    h += '<div class="card"><label>Valor recebido por Quinzena (R$)</label>' + inp("c","0","valQuinzena",S.valQuinzena,"number") +
+         '<div class="g2">' +
+         '<div><label>Dia 1º Pagamento</label>' + inp("c","0","diaQ1",S.diaQ1,"number") + '</div>' +
+         '<div><label>Dia 2º Pagamento</label>' + inp("c","0","diaQ2",S.diaQ2,"number") + '</div>' +
+         '</div></div>';
+  } else if (S.tipoRenda === "mes") {
+    h += '<div class="card"><label>Valor do Salário Mensal (R$)</label>' + inp("c","0","valMes",S.valMes,"number") +
+         '<label>Dia do pagamento</label>' + inp("c","0","diaMes",S.diaMes,"number") + '</div>';
+  }
+
+  h += '<label>Outras rendas por mês (Bolsa Família, extras, etc.)</label>';
+  if (S.ex.length === 0) {
+    h += '<div class="card" style="text-align:center;color:var(--mut);padding:12px;margin-top:6px;">Nenhuma renda extra cadastrada.</div>';
+  }
   S.ex.forEach(function(x){
     h += '<div class="card" style="margin-top:8px">' + inp("x", x.id, "n", x.n, "text") +
          '<div class="g2">' +
@@ -365,7 +467,17 @@ function serie() {
   var c = calc(), out = [], bal = ini0() + c.cobrir, mim = mim0() - c.cobrir;
   for (var d = 1; d <= c.N; d++) {
     var wk = S.dias.indexOf(new Date(c.Y, c.M-1, d).getDay()) >= 0, ev = [], dep = 0;
-    if (wk) { dep = c.g - c.ud; bal += dep; mim += S.dia - c.g; }
+    
+    if (S.tipoRenda === "diaria" && wk) { dep = c.g - c.ud; bal += dep; mim += S.dia - c.g; }
+    if (S.tipoRenda === "quinzena" && (d === Math.min(S.diaQ1, c.N) || d === Math.min(S.diaQ2, c.N))) {
+      bal += S.valQuinzena;
+      ev.push({ n: "Renda Quinzenal", a: S.valQuinzena, in: 1 });
+    }
+    if (S.tipoRenda === "mes" && d === Math.min(S.diaMes, c.N)) {
+      bal += S.valMes;
+      ev.push({ n: "Salário Mensal", a: S.valMes, in: 1 });
+    }
+
     XS().forEach(function(x){ if (Math.min(x.d, c.N) == d) { bal += x.a; ev.push({ n: x.n, a: x.a, in: 1 }); } });
     c.L.forEach(function(b){ if (b.t != "s" && Math.min(b.d || 1, c.N) == d) { bal -= b.a; ev.push({ n: b.n, a: b.a }); } });
     mim -= (S.gp || {})[S.ym + "d" + d] || 0;
@@ -384,13 +496,13 @@ function vSaldo() {
   function pl(k) { return s.map(function(x){ return X(x.d).toFixed(1) + "," + Y(x[k]).toFixed(1); }).join(" "); }
   
   h += '<div class="card"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img"><line x1="0" x2="' + W + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="var(--line)" stroke-dasharray="4 3"/><polyline fill="none" stroke="var(--c)" stroke-width="2.5" points="' + pl("pote") + '"/><polyline fill="none" stroke="var(--v)" stroke-width="2.5" points="' + pl("mim") + '"/></svg><div class="note"><span style="color:var(--c)">●</span> Pote das contas &nbsp; <span style="color:var(--v)">●</span> Pra mim</div></div>';
-  h += '<p class="note">O saldo sobe com o que você separa a cada diária e desce nos dias de pagamento.</p>';
+  h += '<p class="note">O saldo sobe com as entradas de renda e desce nos dias de pagamento.</p>';
   var td = new Date(), tdd = (td.getFullYear() == c.Y && td.getMonth() + 1 == c.M) ? td.getDate() : 0;
   
   s.forEach(function(x){
-    h += '<div class="row' + (x.d == tdd ? " hj" : "") + '" style="align-items:flex-start"><div class="grow"><b>' + WN[new Date(c.Y, c.M-1, x.d).getDay()] + ' ' + x.d + '</b><small>' + (x.wk ? "Separou " + R(x.dep) + " no pote" : "Sem diária") + '</small>' +
+    h += '<div class="row' + (x.d == tdd ? " hj" : "") + '" style="align-items:flex-start"><div class="grow"><b>' + WN[new Date(c.Y, c.M-1, x.d).getDay()] + ' ' + x.d + '</b><small>' + (S.tipoRenda==="diaria" && x.wk ? "Separou " + R(x.dep) + " no pote" : "") + '</small>' +
          x.ev.map(function(e){ return '<small style="color:' + (e.in ? "var(--ok)" : "var(--bad)") + '">' + (e.in ? "+ " : "− ") + e.n + " " + R(e.a) + '</small>'; }).join("") +
-         (x.wk ? '<small>Gastei do pra mim: ' + inp("g", x.d, "g", (S.gp || {})[S.ym + "d" + x.d] || 0, "number") + '</small>' : '') +
+         (S.tipoRenda==="diaria" && x.wk ? '<small>Gastei do pra mim: ' + inp("g", x.d, "g", (S.gp || {})[S.ym + "d" + x.d] || 0, "number") + '</small>' : '') +
          '</div><div class="rt"><small>Pote</small><b style="color:var(--c)">' + R(x.pote) + '</b><small>Pra mim</small><b style="color:var(--v)">' + R(x.mim) + '</b></div></div>';
   });
   return h;
@@ -417,7 +529,7 @@ function vCalendario() {
   
   for (var d = 1; d <= totalDays; d++) {
     var dayOfWeek = new Date(c.Y, c.M - 1, d).getDay();
-    var isWk = S.dias.indexOf(dayOfWeek) >= 0;
+    var isWk = S.tipoRenda === "diaria" && S.dias.indexOf(dayOfWeek) >= 0;
     var dayEv = s[d-1].ev;
     var isToday = d === todayDate;
     var isSel = d === selDay;
@@ -437,21 +549,20 @@ function vCalendario() {
   var selInfo = s[selDay - 1];
   var selDateObj = new Date(c.Y, c.M - 1, selDay);
   var selWn = WN[selDateObj.getDay()];
-  var isSelWk = S.dias.indexOf(selDateObj.getDay()) >= 0;
   
-  h += '<div class="card" style="border-2px solid var(--c);">';
+  h += '<div class="card" style="border:2px solid var(--c);">';
   h += '<b>' + selWn.toUpperCase() + ', ' + selDay + ' DE ' + MS[c.M-1].toUpperCase() + '</b>';
-  h += '<p class="note" style="margin-top:4px;">' + (isSelWk ? 'Dia de Trabalho (Recebe ' + R(S.dia) + ')' : 'Dia de folga / Sem diária') + '</p>';
+  h += '<p class="note" style="margin-top:4px;">Resumo deste dia no calendário</p>';
   
-  if (isSelWk) {
+  if (S.tipoRenda === "diaria" && S.dias.indexOf(selDateObj.getDay()) >= 0) {
     var dn2 = S.paid[S.ym + "d" + selDay];
     h += '<button class="row' + (dn2 ? " done" : "") + '" data-a="tog" data-i="d' + selDay + '" style="margin-top:8px;">' +
          '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>Diária de Trabalho</b><small>Entra ' + R(S.dia) + ' · Pote ' + R(c.g - c.ud) + ' · Uber ' + R(c.ud) + ' · Você ' + R(S.dia - c.g) + '</small></span>' +
+         '<span class="grow"><b>Diária de Trabalho</b><small>Entra ' + R(S.dia) + '</small></span>' +
          '</button>';
   }
   
-  if (selInfo.ev.length === 0 && !isSelWk) {
+  if (selInfo.ev.length === 0) {
     h += '<p class="note">Nenhum pagamento ou recebimento agendado para este dia.</p>';
   } else {
     selInfo.ev.forEach(function(e){
@@ -486,13 +597,32 @@ function draw() {
     return '<button data-a="tab" data-i="'+i+'" class="'+(i==tab?"on":"")+'">'+n+'</button>';
   }).join("");
   document.getElementById("view").innerHTML = [vMes, vSaldo, vCalendario, vContas, vRenda][tab]();
+  
+  // Atualiza o estado do botão de notificações
+  var btnNotif = document.getElementById("btn-notif");
+  if (btnNotif) {
+    if (window.Notification && Notification.permission === "granted") {
+      btnNotif.innerHTML = "🔔 Lembretes Ativados";
+      btnNotif.style.background = "rgba(29,122,62,0.15)";
+      btnNotif.style.color = "var(--ok)";
+    }
+  }
 }
 
 document.addEventListener("change", function(e){
   var t = e.target, sc = t.dataset.s; if (!sc) return;
   var f = t.dataset.f, v = t.value;
   if (sc == "g") { S.gp = S.gp || {}; S.gp[S.ym + "d" + t.dataset.i] = parseFloat(v) || 0; }
-  else if (sc == "c") { var n = parseFloat(v) || 0; if (f == "ini") S.ini[S.ym] = n; else S.dia = n; }
+  else if (sc == "c") {
+    if (f == "tipoRenda") S.tipoRenda = v;
+    else if (f == "ini") S.ini[S.ym] = parseFloat(v) || 0;
+    else if (f == "dia") S.dia = parseFloat(v) || 0;
+    else if (f == "valQuinzena") S.valQuinzena = parseFloat(v) || 0;
+    else if (f == "diaQ1") S.diaQ1 = parseInt(v) || 1;
+    else if (f == "diaQ2") S.diaQ2 = parseInt(v) || 15;
+    else if (f == "valMes") S.valMes = parseFloat(v) || 0;
+    else if (f == "diaMes") S.diaMes = parseInt(v) || 5;
+  }
   else {
     var o = (sc == "b" ? S.bills : S.ex).filter(function(x){ return x.id == t.dataset.i; })[0];
     if (o) o[f] = (f == "a" || f == "d") ? (parseFloat(v) || 0) : v;
@@ -514,6 +644,20 @@ document.addEventListener("click", function(e){
   else if (a == "wd") { var x = S.dias.indexOf(+i); if (x < 0) S.dias.push(+i); else S.dias.splice(x, 1); }
   else if (a == "rep") S.rp[S.ym] = !S.rp[S.ym];
   else if (a == "carry") S.carry = !S.carry;
+  else if (a == "notif") {
+    if (window.Notification) {
+      Notification.requestPermission().then(function(perm){
+        if (perm === "granted") {
+          new Notification("Planejamento Financeiro", { body: "Lembretes ativados com sucesso!" });
+          draw();
+        } else {
+          alert("Permissão de notificação negada pelo navegador.");
+        }
+      });
+    } else {
+      alert("Este navegador não suporta notificações.");
+    }
+  }
   else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a: 0, d: 1, t: "m", i: S.ym, f: "" });
   else if (a == "addx") S.ex.push({ id: "x" + Date.now(), n: "Nova renda", a: 0, d: 1, i: S.ym });
   else if (a == "delb") S.bills = S.bills.filter(function(b){ return b.id != i; });
@@ -523,15 +667,5 @@ document.addEventListener("click", function(e){
 
 draw();
 </script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('SW registrado com sucesso!'))
-      .catch(err => console.log('Erro ao registrar SW:', err));
-  });
-}
-</script>
-
 </body>
 </html>
