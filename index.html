@@ -880,6 +880,9 @@ function vContas() {
 }
 
 function billDaysUI(b) {
+  // Para contas Mensais, não mostra o mini-calendário e nem os dias da semana
+  if (b.t === "m") return '';
+
   var pq = S.ym.split("-"), Yb = +pq[0], Mb = +pq[1], tn = new Date(), tmd = (tn.getFullYear() == Yb && tn.getMonth() + 1 == Mb) ? tn.getDate() : 0,
       pl = billPlan(b, S.ym, ic("dias"), tmd), N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
       isS = b.t === "s", nn = pl.sel.length || 1, q, o = '';
@@ -889,7 +892,7 @@ function billDaysUI(b) {
          [1,2,3,4,5,6,0].map(function(i){ return '<button class="' + (!pl.custom && pl.sel.indexOf(i) >= 0 ? "on" : "") + '" data-a="bwd" data-i="' + b.id + '" data-w="' + i + '">' + WN[i] + '</button>'; }).join("") + '</div>';
   }
   
-  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Ou selecione dia(s) específico(s) do mês para esta conta:" : "Ou marque os dias exatos de " + mNome(S.ym)) + '</label><div class="mini">';
+  o += '<label style="display:block;margin-top:12px">' + (isS ? "Ou marque os dias exatos de " + mNome(S.ym) + " em que esta conta semanal cai:" : "Ou selecione os dias específicos do mês para esta conta:") + '</label><div class="mini">';
   WN.forEach(function(w){ o += '<span class="mh">' + w + '</span>'; });
   for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
   for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + (isS && tmd && q < tmd ? " pass" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
@@ -900,8 +903,6 @@ function billDaysUI(b) {
          : R(b.a) + ' por semana ÷ ' + nn + (nn === 1 ? ' dia' : ' dias') + ' = <b>' + R(b.a / nn) + '</b> em cada dia marcado.') + '</div>';
   } else if (b.t === "dd") {
     o += '<div class="note" style="margin:6px 0 0">' + R(b.a) + ' por dia × ' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + ' = <b>' + R(pl.tw) + '</b> no mês.</div>';
-  } else if (b.t === "m") {
-    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias específicos escolhidos para este mês.' : 'Usando dia padrão mensal (' + (b.d || 1) + '). Toque nos dias acima para mudar.') + '</div>';
   }
 
   if (pl.custom) o += '<button class="add" data-a="bdtclr" data-i="' + b.id + '" style="margin-top:8px">Restaurar padrão da conta</button>';
