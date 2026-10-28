@@ -400,7 +400,7 @@ function carry(ym) {
 }
 
 function XS() { return S.ex.filter(function(x){ return act(x, S.ym); }).map(function(x){ return eff(x, S.ym); }); }
-function XT() { return XS().filter(function(x){ return S.rp[S.ym] || !x.i || x.i == S.ym; }); }
+function XT() { return XS(); }
 function ini0() { return ic("carry") ? carry(S.ym).p : (+S.ini[S.ym] || 0); }
 function mim0() { return ic("carry") ? carry(S.ym).m : Math.max(0, mao(S.ym) - ini0()); }
 
@@ -575,7 +575,7 @@ function calc() {
 
 function RS(c) {
   var pg = 0, en = 0, nd = 0, q0,
-      LT = c.L.filter(function(b){ return S.rp[S.ym] || !b.i || b.i == S.ym; }),
+      LT = c.L,
       XTT = XT(), tT = 0, iT = 0;
 
   if (ic("tipoRenda") === "diaria") iT = ic("dia") * c.w;
@@ -670,10 +670,6 @@ function vMes() {
        '<div class="note">Previsão de sobra no fim do mês: <b>' + R(mc + iT - tT) + '</b>' +
        (ic("tipoRenda") === "diaria" ? ' · ' + nd + ' de ' + c.w + ' diárias marcadas' : '') +
        (Math.abs(mc) > 0.005 ? '<br>Inclui ' + R(mc) + ' que sobrou dos meses anteriores.' : '') + '</div>';
-
-  h += '<button class="add" data-a="rep" style="margin:0 0 10px">' +
-       (S.rp[S.ym] ? "✓ Resumo de cima inclui contas e rendas dos meses anteriores (toque pra desligar)" : "Incluir contas e rendas dos meses anteriores no resumo de cima (desligado)") +
-       '</button>';
 
   if (ic("tipoRenda") === "diaria") {
     h += '<div class="big">Em cada diária de ' + R(ic("dia")) + ': separe <b>' + R(c.g) + '</b> pro pote das contas e fique com <b>' + R(ic("dia") - c.g) + '</b> pra você.<small style="display:block;color:var(--mut);font-size:12px;margin-top:4px">Já inclui 20% de folga pro mês que vem.' +
@@ -866,7 +862,6 @@ function vContas() {
          '<div class="g2">' +
          '<div><label>' + (b.t=="dd" ? "Valor por dia (R$)" : b.t=="s" ? "Valor por semana (R$)" : "Valor (R$)") + '</label>' + inp("b", b.id, "a", b.a, "number") + '</div>' +
          '<div><label>Tipo</label><select data-s="b" data-i="' + b.id + '" data-f="t"><option value="m"' + (b.t=="m"?" selected":"") + '>Mensal</option><option value="s"' + (b.t=="s"?" selected":"") + '>Semanal</option><option value="dd"' + (b.t=="dd"?" selected":"") + '>Diária (dias da semana)</option></select></div>' +
-         (b.t=="m" ? '<div><label>Dia padrão do mês</label>' + inp("b", b.id, "d", b.d, "number") + '</div>' : '') +
          '<div><label>Termina (opcional)</label>' + inp("b", b.id, "f", b.f || "", "month") + '</div>' +
          '</div>' +
          billDaysUI(b) +
@@ -887,7 +882,7 @@ function billDaysUI(b) {
          [1,2,3,4,5,6,0].map(function(i){ return '<button class="' + (!pl.custom && pl.sel.indexOf(i) >= 0 ? "on" : "") + '" data-a="bwd" data-i="' + b.id + '" data-w="' + i + '">' + WN[i] + '</button>'; }).join("") + '</div>';
   }
   
-  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Ou selecione dia(s) específico(s) do mês para esta conta:" : "Ou marque os dias exatos de " + mNome(S.ym)) + '</label><div class="mini">';
+  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Dia do vencimento no mês:" : "Ou marque os dias exatos de " + mNome(S.ym)) + '</label><div class="mini">';
   WN.forEach(function(w){ o += '<span class="mh">' + w + '</span>'; });
   for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
   for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + (isS && tmd && q < tmd ? " pass" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
@@ -899,10 +894,10 @@ function billDaysUI(b) {
   } else if (b.t === "dd") {
     o += '<div class="note" style="margin:6px 0 0">' + R(b.a) + ' por dia × ' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + ' = <b>' + R(pl.tw) + '</b> no mês.</div>';
   } else if (b.t === "m") {
-    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias específicos escolhidos para este mês.' : 'Usando dia padrão mensal (' + (b.d || 1) + '). Toque nos dias acima para mudar.') + '</div>';
+    o += '<div class="note" style="margin:6px 0 0">Vencimento no dia <b>' + (b.d || 1) + '</b>. Toque no calendário acima para mudar o dia.</div>';
   }
 
-  if (pl.custom) o += '<button class="add" data-a="bdtclr" data-i="' + b.id + '" style="margin-top:8px">Restaurar padrão da conta</button>';
+  if (pl.custom && b.t !== "m") o += '<button class="add" data-a="bdtclr" data-i="' + b.id + '" style="margin-top:8px">Restaurar padrão da conta</button>';
   return o;
 }
 
@@ -1171,7 +1166,6 @@ document.addEventListener("click", function(e){
   else if (a == "selday") selDay = +i;
   else if (a == "tog") { var k = S.ym + i; S.paid[k] = !S.paid[k]; }
   else if (a == "wd") { var cur = ic("dias").slice(), x = cur.indexOf(+i); if (x < 0) cur.push(+i); else cur.splice(x, 1); setC("dias", cur); }
-  else if (a == "rep") S.rp[S.ym] = !S.rp[S.ym];
   else if (a == "rclr") { delete (S.real || {})[S.ym]; }
   else if (a == "bkgen") { var bk = document.getElementById("bk"); if (bk) { bk.value = JSON.stringify(S); bk.focus(); bk.select(); try { document.execCommand("copy"); } catch(e2){} } return; }
   else if (a == "bkrst") {
@@ -1202,10 +1196,17 @@ document.addEventListener("click", function(e){
   else if (a == "bdt") {
     var bo3 = S.bills.filter(function(z){ return z.id == i; })[0];
     if (bo3) {
-      var e3 = eff(bo3, S.ym), lst = onList(billPlan(e3, S.ym, ic("dias"), 0).on), dn = +t.dataset.w, ix = lst.indexOf(dn);
-      if (ix < 0) lst.push(dn); else if (!(e3.t === "s" && lst.length === 1)) lst.splice(ix, 1);
-      lst.sort(function(x, y){ return x - y; });
-      bo3.dm = bo3.dm || {}; bo3.dm[S.ym] = lst;
+      if (bo3.t === "m") {
+        bo3.v = bo3.v || {};
+        bo3.v[S.ym] = bo3.v[S.ym] || {};
+        bo3.v[S.ym].d = +t.dataset.w;
+        if (bo3.dm) delete bo3.dm[S.ym];
+      } else {
+        var e3 = eff(bo3, S.ym), lst = onList(billPlan(e3, S.ym, ic("dias"), 0).on), dn = +t.dataset.w, ix = lst.indexOf(dn);
+        if (ix < 0) lst.push(dn); else if (!(e3.t === "s" && lst.length === 1)) lst.splice(ix, 1);
+        lst.sort(function(x, y){ return x - y; });
+        bo3.dm = bo3.dm || {}; bo3.dm[S.ym] = lst;
+      }
     }
   }
   else if (a == "bdtclr") {
