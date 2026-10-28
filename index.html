@@ -416,15 +416,35 @@ function calc() {
       L = S.bills.filter(function(b){ return act(b, S.ym); }).map(function(b){ return eff(b, S.ym); }),
       ex = X.reduce(function(s, x){ return s + x.a; }, 0),
       wk = dias.length || 1, tot = 0, ud = 0, wc = [];
-  var dc = [];
-  for (d = 1; d <= N; d++) { dc[d] = 0; wc[d] = 0; }
+  
+  for (d = 1; d <= N; d++) { wc[d] = 0; } // Removido o dc (deduções diárias agora vão direto pra bD)
   var tnw = new Date(), tmd = (tnw.getFullYear() == Y && tnw.getMonth() + 1 == M) ? tnw.getDate() : 0;
+  
+  var exD = [], bD = [];
+  for (d = 1; d <= N; d++) { exD[d] = []; bD[d] = []; }
+
   L.forEach(function(b){
     var pl = billPlan(b, S.ym, dias, tmd), q;
     b.on = pl.on; b.live = pl.live; b.per = pl.per; b.sel = pl.sel; b.custom = pl.custom; b.cnt = pl.cnt; b.wl = pl.wl;
-    if (b.t == "dd") { for (q = 1; q <= N; q++) if (pl.live[q]) dc[q] += b.a; b.tt = pl.tw; tot += b.tt; }
-    else if (b.t == "s") { for (q = 1; q <= N; q++) if (pl.live[q]) wc[q] += pl.per[q]; b.tw = pl.tw; tot += b.tw; ud += pl.tw; }
-    else { tot += b.a; }
+    
+    if (b.t == "dd") { 
+      for (q = 1; q <= N; q++) {
+        if (pl.live[q]) bD[q].push({ id: b.id + "d" + q, n: b.n, a: b.a, t: "dd" }); // Injeta cada diária como se fosse uma conta no dia!
+      }
+      b.tt = pl.tw; tot += b.tt;
+    }
+    else if (b.t == "s") { 
+      for (q = 1; q <= N; q++) if (pl.live[q]) wc[q] += pl.per[q]; 
+      b.tw = pl.tw; tot += b.tw; ud += pl.tw; 
+    }
+    else { 
+      tot += b.a; 
+      if (b.custom) {
+        for (q = 1; q <= N; q++) if (b.on[q]) bD[q].push(b);
+      } else {
+        bD[Math.min(b.d || 1, N)].push(b);
+      }
+    }
   });
 
   var principalRendaTotal = 0;
@@ -448,18 +468,7 @@ function calc() {
   lumps.forEach(function(e){ if (!e.miss && e.amt > 0) { var o = lumpDays[e.d] || (lumpDays[e.d] = { d: e.d, amt: 0, ids: [] }); o.amt += e.amt; o.ids.push(e.id); } });
   var lumpList = Object.keys(lumpDays).map(function(k){ return lumpDays[k]; }).sort(function(a, b){ return a.d - b.d; });
 
-  var exD = [], bD = [];
-  for (d = 1; d <= N; d++) { exD[d] = []; bD[d] = []; }
   X.forEach(function(x){ exD[Math.min(x.d, N)].push(x); });
-  L.forEach(function(b){
-    if (b.t != "s" && b.t != "dd") {
-      if (b.custom) {
-        for (q = 1; q <= N; q++) if (b.on[q]) bD[q].push(b);
-      } else {
-        bD[Math.min(b.d || 1, N)].push(b);
-      }
-    }
-  });
   var rl = (S.real || {})[S.ym], rd = rl ? Math.min(Math.max(1, +rl.d || 1), N) : 0;
   var bal0 = ini0(), mim0v = mim0();
 
@@ -467,7 +476,7 @@ function calc() {
     var mn = bal, u;
     for (u = d0; u <= dEnd; u++) {
       exD[u].forEach(function(x){ bal += x.a; });
-      if (u > d0) { bal -= wc[u]; bal -= dc[u]; }
+      if (u > d0) { bal -= wc[u]; }
       bD[u].forEach(function(b){ bal -= b.a; });
       if (bal < mn) mn = bal;
     }
@@ -488,10 +497,7 @@ function calc() {
       } else if (wc[d] > 0) {
         bal -= wc[d]; udd = wc[d];
       }
-      if (dc[d] > 0) {
-        bal -= dc[d]; udd += dc[d];
-        if (detail) L.forEach(function(b){ if (b.t == "dd" && b.live[d]) ev.push({ n: b.n, a: b.a }); });
-      }
+      
       if (bal < 0) {
         wsh = -bal; top += -bal; dS += -bal;
         if (detail) dN.push("gastos do dia");
@@ -516,7 +522,7 @@ function calc() {
         if (detail) {
           ev.push({ n: b.n, a: b.a });
           if (sh > 0) ev.push(A ? { n: "Da sobra pro pote", a: sh, in: 1, top: 1 } : { n: "Faltou no pote (não autorizado)", a: sh, den: 1 });
-          bl.push({ id: b.id, n: b.n, a: b.a, d: d, before: before, short: sh, mimAfter: mim });
+          bl.push({ id: b.id, n: b.n, a: b.a, d: d, before: before, short: sh, mimAfter: mim, t: b.t });
         }
       });
       mim -= (S.gp || {})[S.ym + "d" + d] || 0;
@@ -570,7 +576,7 @@ function calc() {
            min: -cobrir, md: fin0.firstTop, wk: wk, ud: ud, cobrir: cobrir, wc: wc,
            wdp: wdp, wP: wP, rd: rd, lack: Math.max(0, -fin0.minM), lackD: fin0.minMd, endMim: fin.endMim, endMimAll: fin0.endMim, endPote: fin.endPote,
            days: fin.days, days0: fin0.days, bl: fin0.bl, seps: fin.seps, weeks: weeks,
-           wnames: L.filter(function(b){ return b.t == "s" || b.t == "dd"; }).map(function(b){ return b.n; }).join(" + ") };
+           wnames: L.filter(function(b){ return b.t == "s"; }).map(function(b){ return b.n; }).join(" + ") };
 }
 
 function RS(c) {
@@ -635,15 +641,23 @@ function vMes() {
     var hojeD = td.getDate();
     var avisosHoje = [];
     c.L.forEach(function(b){
-      if (b.t === "dd") { if (b.on[td.getDate()]) avisosHoje.push("Gasto de hoje: " + b.n + " (" + R(b.a) + ")"); }
-      else if (b.t !== "s" && b.d === hojeD && !S.paid[S.ym + b.id]) avisosHoje.push("Conta a vencer hoje: " + b.n + " (" + R(b.a) + ")");
+      if (b.t === "dd") { 
+        if (b.on[hojeD] && !S.paid[S.ym + b.id + "d" + hojeD]) avisosHoje.push("Gasto de hoje: " + b.n + " (" + R(b.a) + ")"); 
+      }
+      else if (b.t !== "s" && Math.min(b.d||1, c.N) === hojeD && !S.paid[S.ym + b.id]) avisosHoje.push("Conta a vencer hoje: " + b.n + " (" + R(b.a) + ")");
     });
     XS().forEach(function(x){
       if (x.d === hojeD) avisosHoje.push("Renda a cair hoje: " + x.n + " (" + R(x.a) + ")");
     });
     for (var off = 1; off <= 3; off++) {
       var dd2 = hojeD + off; if (dd2 > c.N) break;
-      c.L.forEach(function(b){ if (b.t !== "s" && b.t !== "dd" && Math.min(b.d || 1, c.N) === dd2 && !S.paid[S.ym + b.id]) avisosHoje.push((off === 1 ? "Amanhã" : "Em " + off + " dias") + ": " + b.n + " vence (" + R(b.a) + ")"); });
+      c.L.forEach(function(b){
+        if (b.t === "dd") {
+          if (b.on[dd2] && !S.paid[S.ym + b.id + "d" + dd2]) avisosHoje.push((off === 1 ? "Amanhã" : "Em " + off + " dias") + ": " + b.n + " (" + R(b.a) + ")");
+        } else if (b.t !== "s" && Math.min(b.d || 1, c.N) === dd2 && !S.paid[S.ym + b.id]) {
+          avisosHoje.push((off === 1 ? "Amanhã" : "Em " + off + " dias") + ": " + b.n + " vence (" + R(b.a) + ")");
+        }
+      });
     }
     LASTAV = avisosHoje.slice();
     var dh = c.days[hojeD - 1];
@@ -740,7 +754,7 @@ function vMes() {
 
   var venc = [];
   (c.bl || []).forEach(function(b){
-    venc.push({ d: b.d, o: 0, st: (S.au || {})[S.ym + "d" + b.d], t: b.n, a: b.a, done: S.paid[S.ym + b.id], short: b.short, no: b.short >= 0.005 && b.mimAfter < -0.005,
+    venc.push({ d: b.d, id: b.id, o: 0, st: (S.au || {})[S.ym + "d" + b.d], t: b.n + (b.t === "dd" ? " (Diária)" : ""), a: b.a, done: S.paid[S.ym + b.id], short: b.short, no: b.short >= 0.005 && b.mimAfter < -0.005,
       ok: "Dá: o pote terá " + R(b.before) + ".",
       amb: "Tire " + R(b.short) + " da sobra em mãos: o pote terá só " + R(b.before) + ".",
       red: "Não dá: o pote terá " + R(b.before) + ", faltam " + R(b.short) + " e a sobra em mãos não chega." });
@@ -753,7 +767,7 @@ function vMes() {
   });
   venc.sort(function(a, b){ return a.d - b.d || a.o - b.o; });
   if (venc.length) {
-    h += '<div class="note"><b>Vencimentos: o que dá e o que não dá</b><br>Contas do mês e contas semanais (uma linha por semana). Mostra quanto o pote vai ter na hora de pagar.</div>';
+    h += '<div class="note"><b>Vencimentos: o que dá e o que não dá</b><br>Contas do mês, semanais e <b>diárias (dia a dia)</b>. O sistema garante e te mostra quanto o pote vai ter na hora exata de pagar cada uma.</div>';
     venc.forEach(function(b){
       var ok = b.short < 0.005, no = b.no,
           cor = ok ? "var(--ok)" : (no ? "var(--bad)" : "#d97706"),
@@ -815,7 +829,7 @@ function vMes() {
   }
 
   c.L.filter(function(b){ return b.t === "dd"; }).forEach(function(b){
-    h += '<div class="note"><b>' + b.n + '</b> · ' + R(b.a) + ' por dia. Toque nos dias em que você gastou.</div>';
+    h += '<div class="note"><b>' + b.n + ' (Diária)</b> · ' + R(b.a) + ' por dia. Toque nos dias em que você pagou/gastou.</div>';
     for (var q2 = 1; q2 <= c.N; q2++) {
       var w2 = new Date(c.Y, c.M-1, q2).getDay();
       if (!b.on[q2]) continue;
@@ -889,373 +903,3 @@ function billDaysUI(b) {
   o += '</div>';
 
   if (isS) {
-    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos só pra este mês: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados.'
-         : R(b.a) + ' por semana ÷ ' + nn + (nn === 1 ? ' dia' : ' dias') + ' = <b>' + R(b.a / nn) + '</b> em cada dia marcado.') + '</div>';
-  } else if (b.t === "dd") {
-    o += '<div class="note" style="margin:6px 0 0">' + R(b.a) + ' por dia × ' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + ' = <b>' + R(pl.tw) + '</b> no mês.</div>';
-  } else if (b.t === "m") {
-    o += '<div class="note" style="margin:6px 0 0">Vencimento no dia <b>' + (b.d || 1) + '</b>. Toque no calendário acima para mudar o dia.</div>';
-  }
-
-  if (pl.custom && b.t !== "m") o += '<button class="add" data-a="bdtclr" data-i="' + b.id + '" style="margin-top:8px">Restaurar padrão da conta</button>';
-  return o;
-}
-
-function wkState(d) {
-  var p = S.ym.split("-"), pat = ic("dias").indexOf(new Date(+p[0], +p[1]-1, d).getDay()) >= 0,
-      k = S.ym + "d" + d, o = (S.dw || {})[k], pd = !!S.paid[k];
-  if (o === "n") return "n";
-  if (pat || o === "y") return pd ? "y" : "p";
-  return "off";
-}
-
-function vDiarias() {
-  var p = S.ym.split("-"), Y = +p[0], M = +p[1], N = new Date(Y, M, 0).getDate(), fd = new Date(Y, M-1, 1).getDay(),
-      td = new Date(), tdd = (td.getFullYear() == Y && td.getMonth() + 1 == M) ? td.getDate() : 0,
-      feitas = 0, faltas = 0, faltam = 0, extras = 0, d, st,
-      h = '<div class="card"><b>📅 Dias que fiz diária em ' + MS[M-1] + '</b>' +
-          '<p class="note" style="margin:4px 0 8px">Toque no dia: <b>1 vez</b> = trabalhei ✓ · <b>2 vezes</b> = faltei (doente, folga) · <b>3 vezes</b> = volta ao normal. Em dia que você não costuma trabalhar, toque pra marcar uma diária extra.</p>' +
-          '<div class="cal-grid">';
-  WN.forEach(function(w){ h += '<div class="cal-head">' + w.toUpperCase() + '</div>'; });
-  for (d = 0; d < fd; d++) h += '<div class="cal-day empty"></div>';
-  for (d = 1; d <= N; d++) {
-    st = wkState(d);
-    var badge = "", pat = ic("dias").indexOf(new Date(Y, M-1, d).getDay()) >= 0;
-    if (st === "y") { feitas++; if (!pat) extras++; badge = '<span class="cal-badge in">✓ Fiz</span>'; }
-    else if (st === "n") { faltas++; badge = '<span class="cal-badge out">✗ Faltei</span>'; }
-    else if (st === "p") { faltam++; badge = '<span class="cal-badge wk">Previsto</span>'; }
-    h += '<div class="cal-day' + (d === tdd ? " hj" : "") + '" data-a="wkd" data-i="' + d + '"><span class="cal-num">' + d + '</span><div class="cal-dots">' + badge + '</div></div>';
-  }
-  h += '</div>';
-  var v = +ic("dia") || 0;
-  h += '<div class="g2" style="margin-top:0">' +
-       '<div class="cd"><small>Diárias feitas</small><b style="color:var(--ok)">' + feitas + ' · ' + R(feitas * v) + '</b></div>' +
-       '<div class="cd"><small>Ainda previstas</small><b style="color:var(--v)">' + faltam + ' · ' + R(faltam * v) + '</b></div>' +
-       '</div>' +
-       '<div class="note">' + (faltas ? 'Faltas marcadas: <b>' + faltas + '</b> (' + R(faltas * v) + ' a menos no mês). ' : 'Nenhuma falta marcada. ') +
-       (extras ? 'Diárias extras: <b>' + extras + '</b>. ' : '') + 'Os dias de falta saem do plano e o app recalcula quanto separar.</div>';
-  if (tdd) h += '<button class="add" data-a="wkall" style="margin-top:4px">✓ Marcar como feitos todos os dias previstos até hoje</button>';
-  return h + '</div>';
-}
-
-function vBackup() {
-  return '<div class="card" style="margin-top:14px"><b>💾 Backup dos seus dados</b><div class="note" style="margin:4px 0 6px">Seus dados ficam sincronizados na sua conta. Você também pode gerar o backup em texto por segurança.</div>' +
-         '<textarea id="bk" rows="3" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:12px" placeholder="O backup aparece aqui. Pra restaurar, cole aqui o texto salvo."></textarea>' +
-         '<div class="g2"><button class="add" data-a="bkgen" style="margin-top:0">Gerar backup</button><button class="add" data-a="bkrst" style="margin-top:0">Restaurar</button></div></div>';
-}
-
-function vRenda() {
-  var tr = ic("tipoRenda"),
-      h = navH() + '<p class="note">Você está editando a renda de <b>' + mNome(S.ym) + '</b>. O que mudar aqui vale deste mês em diante e <b>não altera os meses anteriores</b>.</p>';
-  h += '<div class="card fld"><label>Como você recebe sua renda principal?</label>' +
-       '<select data-s="c" data-i="0" data-f="tipoRenda">' +
-       '<option value="diaria"' + (tr==="diaria"?" selected":"") + '>Por Diária (Dias da semana)</option>' +
-       '<option value="quinzena"' + (tr==="quinzena"?" selected":"") + '>Por Quinzena (A cada 15 dias)</option>' +
-       '<option value="mes"' + (tr==="mes"?" selected":"") + '>Por Mês (Fixo mensal)</option>' +
-       '</select></div>';
-
-  if (tr === "diaria") {
-    h += '<div class="card fld"><label>Valor da diária (R$)</label>' + inp("c","0","dia",ic("dia"),"number") + '</div>' +
-         '<label>Dias em que você trabalha</label><div class="wds">';
-    [1,2,3,4,5,6,0].forEach(function(i){
-      h += '<button class="' + (ic("dias").indexOf(i)>=0 ? "on" : "") + '" data-a="wd" data-i="' + i + '">' + WN[i] + '</button>';
-    });
-    h += '</div>';
-    h += vDiarias();
-  } else if (tr === "quinzena") {
-    h += '<div class="card"><label>Valor recebido por Quinzena (R$)</label>' + inp("c","0","valQuinzena",ic("valQuinzena"),"number") +
-         '<div class="g2">' +
-         '<div><label>Dia 1º Pagamento</label>' + inp("c","0","diaQ1",ic("diaQ1"),"number") + '</div>' +
-         '<div><label>Dia 2º Pagamento</label>' + inp("c","0","diaQ2",ic("diaQ2"),"number") + '</div>' +
-         '</div></div>';
-  } else if (tr === "mes") {
-    h += '<div class="card"><label>Valor do Salário Mensal (R$)</label>' + inp("c","0","valMes",ic("valMes"),"number") +
-         '<label>Dia do pagamento</label>' + inp("c","0","diaMes",ic("diaMes"),"number") + '</div>';
-  }
-
-  h += '<label>Outras rendas por mês (Bolsa Família, extras, etc.)</label>';
-  var XB = S.ex.filter(function(x){ return act(x, S.ym); }).map(function(x){ return eff(x, S.ym); });
-  if (XB.length === 0) {
-    h += '<div class="card" style="text-align:center;color:var(--mut);padding:12px;margin-top:6px;">Nenhuma renda extra ativa neste mês.</div>';
-  }
-  XB.forEach(function(x){
-    h += '<div class="card" style="margin-top:8px">' + inp("x", x.id, "n", x.n, "text") +
-         '<div class="g2">' +
-         '<div><label>Valor (R$)</label>' + inp("x", x.id, "a", x.a, "number") + '</div>' +
-         '<div><label>Dia que cai</label>' + inp("x", x.id, "d", x.d, "number") + '</div>' +
-         '<div><label>Termina (opcional)</label>' + inp("x", x.id, "f", x.f || "", "month") + '</div>' +
-         '</div>' +
-         '<div class="note" style="margin:6px 0 0">Renda desde ' + mNome(x.i) + '.</div>' +
-         '<button class="del" data-a="delx" data-i="' + x.id + '">Remover a partir de ' + mNome(S.ym) + '</button>' +
-         '</div>';
-  });
-  return h + '<button class="add" data-a="addx">+ Nova renda em ' + mNome(S.ym) + '</button>' + vBackup();
-}
-
-function serie() { return calc().days; }
-
-function vSaldo() {
-  var c = calc(), s = serie(), vs = [0],
-      h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
-  s.forEach(function(x){ vs.push(x.pote, x.mim); });
-  var mn = Math.min.apply(null, vs), mx = Math.max.apply(null, vs), rg = (mx - mn) || 1, W = 300, H = 130;
-  function X(d) { return 4 + (d - 1) * (W - 8) / Math.max(1, c.N - 1); }
-  function Y(v) { return H - 6 - (v - mn) * (H - 12) / rg; }
-  function pl(k) { return s.map(function(x){ return X(x.d).toFixed(1) + "," + Y(x[k]).toFixed(1); }).join(" "); }
-  
-  h += '<div class="card"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img"><line x1="0" x2="' + W + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="var(--line)" stroke-dasharray="4 3"/><polyline fill="none" stroke="var(--c)" stroke-width="2.5" points="' + pl("pote") + '"/><polyline fill="none" stroke="var(--v)" stroke-width="2.5" points="' + pl("mim") + '"/></svg><div class="note"><span style="color:var(--c)">●</span> Pote das contas &nbsp; <span style="color:var(--v)">●</span> Pra mim</div></div>';
-  h += '<p class="note">O saldo sobe com as entradas de renda e desce nos dias de pagamento.</p>';
-  var td = new Date(), tdd = (td.getFullYear() == c.Y && td.getMonth() + 1 == c.M) ? td.getDate() : 0;
-  
-  s.forEach(function(x){
-    h += '<div class="row' + (x.d == tdd ? " hj" : "") + '" style="align-items:flex-start"><div class="grow"><b>' + WN[new Date(c.Y, c.M-1, x.d).getDay()] + ' ' + x.d + '</b><small>' + (ic("tipoRenda")==="diaria" && x.wk ? "Separou " + R(x.dep) + " no pote" : "") + '</small>' +
-         x.ev.map(function(e){ return '<small style="color:' + (e.in ? "var(--ok)" : "var(--bad)") + '">' + (e.in ? "+ " : "− ") + e.n + " " + R(e.a) + '</small>'; }).join("") +
-         (ic("tipoRenda")==="diaria" && x.wk ? '<small>Gastei do pra mim: ' + inp("g", x.d, "g", (S.gp || {})[S.ym + "d" + x.d] || 0, "number") + '</small>' : '') +
-         '</div><div class="rt"><small>Pote</small><b style="color:var(--c)">' + R(x.pote) + '</b><small>Pra mim</small><b style="color:var(--v)">' + R(x.mim) + '</b></div></div>';
-  });
-  return h;
-}
-
-function vCalendario() {
-  var c = calc(), s = serie(),
-      h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
-  
-  var firstDay = new Date(c.Y, c.M - 1, 1).getDay();
-  var totalDays = c.N;
-  var today = new Date();
-  var isCurrentMonth = today.getFullYear() == c.Y && (today.getMonth() + 1) == c.M;
-  var todayDate = isCurrentMonth ? today.getDate() : 0;
-  
-  if (!selDay || selDay > totalDays) selDay = todayDate || 1;
-  
-  h += '<div class="cal-grid">';
-  WN.forEach(function(w){ h += '<div class="cal-head">' + w.toUpperCase() + '</div>'; });
-  
-  for (var i = 0; i < firstDay; i++) {
-    h += '<div class="cal-day empty"></div>';
-  }
-  
-  for (var d = 1; d <= totalDays; d++) {
-    var isWk = ic("tipoRenda") === "diaria" && wdOn(d);
-    var dayEv = s[d-1].ev;
-    var isToday = d === todayDate;
-    var isSel = d === selDay;
-    
-    var cls = "cal-day" + (isToday ? " hj" : "") + (isSel ? " sel" : "");
-    h += '<div class="' + cls + '" data-a="selday" data-i="' + d + '">';
-    h += '<span class="cal-num">' + d + '</span>';
-    h += '<div class="cal-dots">';
-    if (isWk) h += '<span class="cal-badge wk">Diária</span>';
-    dayEv.forEach(function(e){
-      h += '<span class="cal-badge ' + (e.in ? 'in' : 'out') + '">' + e.n + '</span>';
-    });
-    h += '</div></div>';
-  }
-  h += '</div>';
-  
-  var selInfo = s[selDay - 1];
-  var selDateObj = new Date(c.Y, c.M - 1, selDay);
-  var selWn = WN[selDateObj.getDay()];
-  
-  h += '<div class="card" style="border:2px solid var(--c);">';
-  h += '<b>' + selWn.toUpperCase() + ', ' + selDay + ' DE ' + MS[c.M-1].toUpperCase() + '</b>';
-  h += '<p class="note" style="margin-top:4px;">Resumo deste dia no calendário</p>';
-  
-  if (ic("tipoRenda") === "diaria" && wdOn(selDay)) {
-    var dn2 = S.paid[S.ym + "d" + selDay];
-    h += '<button class="row' + (dn2 ? " done" : "") + '" data-a="tog" data-i="d' + selDay + '" style="margin-top:8px;">' +
-         '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>Diária de Trabalho</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
-         '</button>';
-  }
-  
-  if (selInfo.ev.length === 0) {
-    h += '<p class="note">Nenhum pagamento ou recebimento agendado para este dia.</p>';
-  } else {
-    selInfo.ev.forEach(function(e){
-      var itemBill = c.L.filter(function(b){ return b.n == e.n; })[0];
-      var itemInc = XS().filter(function(x){ return x.n == e.n; })[0];
-      var itemId = itemBill ? itemBill.id : (itemInc ? itemInc.id : "");
-      if (itemBill && itemBill.t === "dd") itemId = itemBill.id + "d" + selDay;
-      var done = itemId ? S.paid[S.ym + itemId] : false;
-      
-      if (itemId) {
-        h += '<button class="row' + (done ? " done" : "") + '" data-a="tog" data-i="' + itemId + '" style="margin-top:6px;">' +
-             '<span class="chk">' + (done ? "✓" : "") + '</span>' +
-             '<span class="grow"><b>' + e.n + '</b><small>' + (e.in ? "Renda caindo na conta" : "Conta a pagar") + '</small></span>' +
-             '<span class="amt' + (e.in ? " in" : "") + '">' + (e.in ? "+" : "") + R(e.a) + '</span>' +
-             '</button>';
-      } else {
-        h += '<div class="row" style="margin-top:6px;"><span class="grow"><b>' + e.n + '</b></span><span class="amt' + (e.in ? " in" : "") + '">' + R(e.a) + '</span></div>';
-      }
-    });
-  }
-  
-  h += '<div style="display:flex;justify-content:space-between;margin-top:10px;font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-top:8px;">' +
-       '<span>Pote no fim do dia: <b style="color:var(--c)">' + R(selInfo.pote) + '</b></span>' +
-       '<span>Pra você: <b style="color:var(--v)">' + R(selInfo.mim) + '</b></span>' +
-       '</div>';
-  h += '</div>';
-  
-  return h;
-}
-
-function draw() {
-  CC = {}; MC = {};
-  document.getElementById("tabs").innerHTML = ["Renda","Mês","Calendário","Saldo","Contas"].map(function(n,i){
-    return '<button data-a="tab" data-i="'+i+'" class="'+(i==tab?"on":"")+'">'+n+'</button>';
-  }).join("");
-  document.getElementById("view").innerHTML = [vRenda, vMes, vCalendario, vSaldo, vContas][tab]();
-  
-  var btnNotif = document.getElementById("btn-notif");
-  if (btnNotif) {
-    if (!window.Notification) btnNotif.style.display = "none";
-    if (window.Notification && Notification.permission === "granted") {
-      btnNotif.innerHTML = "🔔 Avisos ativados (aparecem quando você abre o app)";
-      btnNotif.style.background = "rgba(29,122,62,0.15)";
-      btnNotif.style.color = "var(--ok)";
-    }
-  }
-}
-
-document.addEventListener("change", function(e){
-  var t = e.target, sc = t.dataset.s; if (!sc) return;
-  var f = t.dataset.f, v = t.value;
-  if (sc == "g") { S.gp = S.gp || {}; S.gp[S.ym + "d" + t.dataset.i] = parseFloat(v) || 0; }
-  else if (sc == "r") {
-    S.real = S.real || {};
-    var rr = S.real[S.ym] || (S.real[S.ym] = { d: 1, pote: null, mim: null });
-    rr.d = new Date().getDate();
-    if (f == "pote") rr.pote = v === "" ? null : (parseFloat(v) || 0);
-    else rr.mim = v === "" ? null : (parseFloat(v) || 0);
-    if (rr.pote === null && rr.mim === null) delete S.real[S.ym];
-  }
-  else if (sc == "c") {
-    if (f == "tipoRenda") setC("tipoRenda", v);
-    else if (f == "ini") S.ini[S.ym] = parseFloat(v) || 0;
-    else if (f == "dia") setC("dia", parseFloat(v) || 0);
-    else if (f == "valQuinzena") setC("valQuinzena", parseFloat(v) || 0);
-    else if (f == "diaQ1") setC("diaQ1", parseInt(v) || 1);
-    else if (f == "diaQ2") setC("diaQ2", parseInt(v) || 15);
-    else if (f == "valMes") setC("valMes", parseFloat(v) || 0);
-    else if (f == "diaMes") setC("diaMes", parseInt(v) || 5);
-  }
-  else {
-    var o = (sc == "b" ? S.bills : S.ex).filter(function(x){ return x.id == t.dataset.i; })[0];
-    if (o) {
-      if (f == "f") { if (v && v < S.ym) v = S.ym; o.f = v; }
-      else {
-        o.v = o.v || {}; o.v[S.ym] = o.v[S.ym] || {};
-        o.v[S.ym][f] = (f == "a" || f == "d") ? (parseFloat(v) || 0) : v;
-        if (f == "t" && v == "m" && !o.d) o.d = 1;
-      }
-    }
-  }
-  save(); draw();
-});
-
-document.addEventListener("click", function(e){
-  var t = e.target.closest("[data-a]"); if (!t) return;
-  var a = t.dataset.a, i = t.dataset.i;
-  if (a == "tab") tab = +i;
-  else if (a == "pm" || a == "nm") {
-    var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
-    S.ym = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
-    selDay = 1;
-  }
-  else if (a == "selday") selDay = +i;
-  else if (a == "tog") { var k = S.ym + i; S.paid[k] = !S.paid[k]; }
-  else if (a == "wd") { var cur = ic("dias").slice(), x = cur.indexOf(+i); if (x < 0) cur.push(+i); else cur.splice(x, 1); setC("dias", cur); }
-  else if (a == "rclr") { delete (S.real || {})[S.ym]; }
-  else if (a == "bkgen") { var bk = document.getElementById("bk"); if (bk) { bk.value = JSON.stringify(S); bk.focus(); bk.select(); try { document.execCommand("copy"); } catch(e2){} } return; }
-  else if (a == "bkrst") {
-    var bt2 = document.getElementById("bk"), nS = null;
-    try { nS = JSON.parse(bt2 ? bt2.value : ""); } catch(e3){}
-    if (!nS || !nS.bills || !nS.ym) { alert("Cole primeiro o texto do backup na caixa."); return; }
-    S = nS; fix(); START = S.start; save();
-  }
-  else if (a == "wkd") {
-    S.dw = S.dw || {};
-    var wk = S.ym + "d" + i, ws = wkState(+i), wp = S.ym.split("-"), wpat = ic("dias").indexOf(new Date(+wp[0], +wp[1]-1, +i).getDay()) >= 0;
-    if (wpat) {
-      if (ws === "n") { delete S.dw[wk]; delete S.paid[wk]; }
-      else if (ws === "y") { S.dw[wk] = "n"; delete S.paid[wk]; }
-      else S.paid[wk] = true;
-    } else {
-      if (ws === "off") { S.dw[wk] = "y"; S.paid[wk] = true; }
-      else { delete S.dw[wk]; delete S.paid[wk]; }
-    }
-  }
-  else if (a == "wkall") {
-    var tdy = new Date(), wq;
-    for (wq = 1; wq <= tdy.getDate(); wq++) if (wkState(wq) === "p") S.paid[S.ym + "d" + wq] = true;
-  }
-  else if (a == "au") { S.au = S.au || {}; var ak = S.ym + "d" + i; if (t.dataset.v) S.au[ak] = t.dataset.v; else delete S.au[ak]; }
-  else if (a == "auall") { S.au = S.au || {}; (t.dataset.l || "").split(",").forEach(function(dd){ if (dd) S.au[S.ym + "d" + dd] = "y"; }); }
-  else if (a == "carry") setC("carry", !ic("carry"));
-  else if (a == "bdt") {
-    var bo3 = S.bills.filter(function(z){ return z.id == i; })[0];
-    if (bo3) {
-      if (bo3.t === "m") {
-        bo3.v = bo3.v || {};
-        bo3.v[S.ym] = bo3.v[S.ym] || {};
-        bo3.v[S.ym].d = +t.dataset.w;
-        if (bo3.dm) delete bo3.dm[S.ym];
-      } else {
-        var e3 = eff(bo3, S.ym), lst = onList(billPlan(e3, S.ym, ic("dias"), 0).on), dn = +t.dataset.w, ix = lst.indexOf(dn);
-        if (ix < 0) lst.push(dn); else if (!(e3.t === "s" && lst.length === 1)) lst.splice(ix, 1);
-        lst.sort(function(x, y){ return x - y; });
-        bo3.dm = bo3.dm || {}; bo3.dm[S.ym] = lst;
-      }
-    }
-  }
-  else if (a == "bdtclr") {
-    var bo4 = S.bills.filter(function(z){ return z.id == i; })[0];
-    if (bo4 && bo4.dm) delete bo4.dm[S.ym];
-  }
-  else if (a == "bwd") {
-    var bo = S.bills.filter(function(z){ return z.id == i; })[0];
-    if (bo) {
-      var bo2 = eff(bo, S.ym),
-          cur2 = (bo2.t === "s" ? ((bo2.wd && bo2.wd.length) ? bo2.wd : ic("dias")) : (bo2.wd || [1,2,3,4,5])).slice(),
-          w3 = +t.dataset.w, x3 = cur2.indexOf(w3);
-      if (x3 < 0) cur2.push(w3); else if (!(bo2.t === "s" && cur2.length === 1)) cur2.splice(x3, 1);
-      if (bo.dm) delete bo.dm[S.ym];
-      bo.v = bo.v || {}; bo.v[S.ym] = bo.v[S.ym] || {}; bo.v[S.ym].wd = cur2;
-    }
-  }
-  else if (a == "notif") {
-    if (window.Notification) {
-      Notification.requestPermission().then(function(perm){
-        if (perm === "granted") {
-          new Notification("Planejamento Financeiro", { body: "Lembretes ativados com sucesso!" });
-          draw();
-        } else {
-          alert("Permissão de notificação negada pelo navegador.");
-        }
-      });
-    } else {
-      alert("Este navegador não suporta notificações.");
-    }
-  }
-  else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a: 0, d: 1, t: "m", i: S.ym, f: "", v: {} });
-  else if (a == "addx") S.ex.push({ id: "x" + Date.now(), n: "Nova renda", a: 0, d: 1, i: S.ym, f: "", v: {} });
-  else if (a == "delb" || a == "delx") {
-    var key = a == "delb" ? "bills" : "ex", o = S[key].filter(function(z){ return z.id == i; })[0];
-    if (o) {
-      if (!o.i || o.i >= S.ym) S[key] = S[key].filter(function(z){ return z.id != i; });
-      else o.f = prevYM(S.ym);
-    }
-  }
-  save(); draw();
-});
-
-try {
-  if (window.Notification && Notification.permission === "granted" && LASTAV.length) {
-    var nk = "aviso-" + new Date().toDateString();
-    if (!localStorage.getItem(nk)) { new Notification("Planejamento Financeiro", { body: LASTAV.join("\n") }); localStorage.setItem(nk, "1"); }
-  }
-} catch(e){}
-</script>
-</body>
-</html>
