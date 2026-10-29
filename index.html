@@ -127,6 +127,15 @@ label { font-size: 13px; color: var(--mut); font-weight: 700; }
 .bar { height: 8px; background: var(--line); border-radius: 6px; overflow: hidden; margin: 0 0 6px; }
 .bar i { display: block; height: 100%; background: var(--ok); border-radius: 6px; }
 textarea { font: inherit; }
+.row.sm { padding: 8px 10px; margin-bottom: 6px; }
+.mk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 6px 0 12px; }
+.mk .mh { text-align: center; font-size: 11px; font-weight: 700; color: var(--mut); }
+.mk button, .mk .off { min-height: 46px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); font-weight: 700; font-size: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; padding: 0; }
+.mk button { cursor: pointer; }
+.mk button small { font-size: 13px; min-height: 14px; }
+.mk button.on { background: var(--ok); border-color: var(--ok); color: var(--bg); }
+.mk button.hj { box-shadow: 0 0 0 2px var(--v); }
+.mk .off { opacity: .3; background: transparent; border-style: dashed; }
 .perm { border-width: 2px; }
 .perm .pb { display: flex; gap: 8px; }
 .perm .pb button { flex: 1; padding: 11px 6px; border-radius: 8px; font-weight: 700; cursor: pointer; border: 1px solid var(--line); background: var(--card); }
@@ -187,7 +196,7 @@ var unsubscribeSync = null;
 var LASTAV = [],
     MS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],
     WN = ["dom","seg","ter","qua","qui","sex","sáb"],
-    tab = 1, selDay = 0,
+    tab = 1, selDay = 0, VOPEN = false,
     currentYM = new Date().getFullYear() + "-" + ("0" + (new Date().getMonth() + 1)).slice(-2),
     S = createEmptyState();
 
@@ -644,6 +653,7 @@ function vMes() {
   var c = calc(),
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
   
+  h += '<button class="add" data-a="tab" data-i="2" style="margin:0 0 12px;background:var(--c);color:var(--bg);border-color:var(--c)">✅ Marcar diárias e pagamentos →</button>';
   var td = new Date();
   var isCurrentMonth = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M;
   if (isCurrentMonth) {
@@ -817,8 +827,9 @@ function vMes() {
   });
   venc.sort(function(a, b){ return a.d - b.d || a.o - b.o; });
   if (venc.length) {
-    h += '<div class="note"><b>Vencimentos: o que dá e o que não dá</b><br>Contas do mês, semanais e <b>diárias (dia a dia)</b>. O sistema garante e te mostra quanto o pote vai ter na hora exata de pagar cada uma.</div>';
-    venc.forEach(function(b){
+    var nProb = venc.filter(function(v){ return v.short >= 0.005 && !(isCurrentMonth && v.d < td.getDate()); }).length;
+    h += '<button class="add" data-a="tvenc" style="margin:0 0 10px;text-align:left">' + (VOPEN ? "▾ Esconder" : "▸ Ver") + ' vencimentos: o que dá e o que não dá' + (nProb ? ' · ⚠️ ' + nProb + ' pedem atenção' : ' · ✅ tudo coberto') + '</button>';
+    if (VOPEN) venc.forEach(function(b){
       var ok = b.short < 0.005, no = b.no,
           cor = ok ? "var(--ok)" : (no ? "var(--bad)" : "#d97706"),
           ate = (isCurrentMonth && b.d >= td.getDate()) ? " · " + (b.d == td.getDate() ? "hoje" : "em " + (b.d - td.getDate()) + " dias") : "",
@@ -848,71 +859,72 @@ function vMes() {
   h += ic("carry") ? '<div class="note">Veio do mês anterior: pote ' + R(cy.p) + ' · pra mim ' + R(cy.m) + '</div>'
               : '<div class="card fld"><label>Começar o mês com este valor no pote (R$)</label>' + inp("c","0","ini",S.ini[S.ym]||0,"number") + '</div>';
 
+  return h.replace("<!--BAN-->", ban + spend + permH + snap) + '<button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">✅ Marcar diárias e pagamentos →</button>';
+}
+
+function mkGrid(c, pre, on) {
+  var h = '<div class="mk">', first = new Date(c.Y, c.M - 1, 1).getDay(), td = new Date(),
+      cur = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M, i, q, dn;
+  WN.forEach(function(n){ h += '<div class="mh">' + n + '</div>'; });
+  for (i = 0; i < first; i++) h += '<div></div>';
+  for (q = 1; q <= c.N; q++) {
+    if (!on(q)) { h += '<div class="off">' + q + '</div>'; continue; }
+    dn = S.paid[S.ym + pre + q];
+    h += '<button class="' + (dn ? "on" : "") + (cur && td.getDate() === q ? " hj" : "") + '" data-a="tog" data-i="' + pre + q + '">' + q + '<small>' + (dn ? "✓" : "") + '</small></button>';
+  }
+  return h + '</div>';
+}
+
+function vMarcar() {
+  var c = calc(), rs = RS(c), tT = rs.tT, pg = rs.pg, pct = tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0,
+      h = navH();
+  h += '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+       '<div class="note" style="margin-top:0">Paguei <b>' + R(pg) + '</b> · falta <b>' + R(Math.max(0, tT - pg)) + '</b> (' + pct + '% das contas)</div>';
+
   if (ic("tipoRenda") === "diaria" && ic("dia") > 0) {
-    h += '<div class="note"><b>Separar a cada diária</b><br>Ao receber o dinheiro de cada dia, separe assim e toque pra marcar.</div>';
-    for (var q = 1; q <= c.N; q++) {
-      if (!wdOn(q)) continue;
-      var dn2 = S.paid[S.ym + "d" + q];
-      h += '<button class="row' + (dn2 ? " done" : "") + '" data-a="tog" data-i="d' + q + '">' +
-           '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
-           '<span class="grow"><b>' + WN[new Date(c.Y, c.M-1, q).getDay()] + ' ' + q + '</b><small>Pote ' + R(c.g - c.wc[q]) + (c.wc[q] > 0 ? ' · Conta semanal ' + R(c.wc[q]) : '') + ' · Você ' + R(ic("dia") - c.g) + '</small></span>' +
-           '</button>';
-    }
+    var tot = 0, ok = 0;
+    for (var q = 1; q <= c.N; q++) if (wdOn(q)) { tot++; if (S.paid[S.ym + "d" + q]) ok++; }
+    h += '<div class="note"><b>Diárias recebidas</b> · ' + ok + ' de ' + tot + '<br>Em cada uma separe <b>' + R(c.g) + '</b> pro pote e fique com <b>' + R(ic("dia") - c.g) + '</b>. Toque no dia pra marcar.</div>';
+    h += mkGrid(c, "d", wdOn);
   } else if (ic("tipoRenda") === "quinzena" && ic("valQuinzena") > 0) {
     h += '<div class="note"><b>Recebimentos da Quinzena</b></div>';
-    var q1Done = S.paid[S.ym + "q1"], q2Done = S.paid[S.ym + "q2"];
-    h += '<button class="row' + (q1Done ? " done" : "") + '" data-a="tog" data-i="q1">' +
-         '<span class="chk">' + (q1Done ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>1ª Quinzena (Dia ' + ic("diaQ1") + ')</b><small>Recebimento quinzenal</small></span>' +
-         '<span class="amt in">+' + R(ic("valQuinzena")) + '</span></button>';
-    h += '<button class="row' + (q2Done ? " done" : "") + '" data-a="tog" data-i="q2">' +
-         '<span class="chk">' + (q2Done ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>2ª Quinzena (Dia ' + ic("diaQ2") + ')</b><small>Recebimento quinzenal</small></span>' +
-         '<span class="amt in">+' + R(ic("valQuinzena")) + '</span></button>';
+    [["q1", "1ª Quinzena (Dia " + ic("diaQ1") + ")"], ["q2", "2ª Quinzena (Dia " + ic("diaQ2") + ")"]].forEach(function(z){
+      var d1 = S.paid[S.ym + z[0]];
+      h += '<button class="row sm' + (d1 ? " done" : "") + '" data-a="tog" data-i="' + z[0] + '"><span class="chk">' + (d1 ? "✓" : "") + '</span><span class="grow"><b>' + z[1] + '</b></span><span class="amt in">+' + R(ic("valQuinzena")) + '</span></button>';
+    });
   } else if (ic("tipoRenda") === "mes" && ic("valMes") > 0) {
-    h += '<div class="note"><b>Salário Mensal</b></div>';
-    var mDone = S.paid[S.ym + "mes1"];
-    h += '<button class="row' + (mDone ? " done" : "") + '" data-a="tog" data-i="mes1">' +
-         '<span class="chk">' + (mDone ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>Salário (Dia ' + ic("diaMes") + ')</b><small>Recebimento mensal fixo</small></span>' +
-         '<span class="amt in">+' + R(ic("valMes")) + '</span></button>';
+    var mD = S.paid[S.ym + "mes1"];
+    h += '<div class="note"><b>Salário Mensal</b></div>' +
+         '<button class="row sm' + (mD ? " done" : "") + '" data-a="tog" data-i="mes1"><span class="chk">' + (mD ? "✓" : "") + '</span><span class="grow"><b>Salário (Dia ' + ic("diaMes") + ')</b></span><span class="amt in">+' + R(ic("valMes")) + '</span></button>';
   }
 
   c.L.filter(function(b){ return b.t === "dd"; }).forEach(function(b){
-    h += '<div class="note"><b>' + b.n + ' (Diária)</b> · ' + R(b.a) + ' por dia. Toque nos dias em que você pagou/gastou.</div>';
-    for (var q2 = 1; q2 <= c.N; q2++) {
-      var w2 = new Date(c.Y, c.M-1, q2).getDay();
-      if (!b.on[q2]) continue;
-      var k2 = b.id + "d" + q2, dn3 = S.paid[S.ym + k2];
-      h += '<button class="row' + (dn3 ? " done" : "") + '" data-a="tog" data-i="' + k2 + '"><span class="chk">' + (dn3 ? "✓" : "") + '</span>' +
-           '<span class="grow"><b>' + WN[w2] + ' ' + q2 + '</b><small>Gasto do dia</small></span><span class="amt">' + R(b.a) + '</span></button>';
-    }
+    var t2 = 0, o2 = 0;
+    for (var q2 = 1; q2 <= c.N; q2++) if (b.on[q2]) { t2++; if (S.paid[S.ym + b.id + "d" + q2]) o2++; }
+    h += '<div class="note"><b>' + b.n + ' (Diária)</b> · ' + R(b.a) + ' por dia · ' + o2 + ' de ' + t2 + '<br>Toque nos dias em que você pagou/gastou.</div>';
+    h += mkGrid(c, b.id + "d", function(q){ return !!b.on[q]; });
   });
+
   h += '<div class="note"><b>Pagamentos do mês</b></div>';
   if (c.L.length === 0 && XS().length === 0) {
     h += '<div class="card" style="text-align:center;color:var(--mut);padding:16px;">Nenhuma conta ou renda extra cadastrada. Vá na aba <b>Contas</b> ou <b>Renda</b> para adicionar.</div>';
   }
-
   var it = [];
   c.L.forEach(function(b){
     if (b.t == "dd") return;
-    if (b.t == "s") it.push({ d: 99, n: b.n, a: b.tw, s: R(b.a) + " por semana · " + (b.wl === 0 ? "nenhuma semana falta neste mês" : "faltam " + b.wl + (b.wl === 1 ? " semana" : " semanas")) + " · " + (b.custom ? "dias " + onList(b.on).join(", ") : (b.sel.length >= 7 ? "todo dia" : "nos dias: " + selNames(b.sel))), id: b.id, w: 1 });
+    if (b.t == "s") it.push({ d: 99, n: b.n, a: b.tw, s: R(b.a) + " por semana · " + (b.wl === 0 ? "nenhuma semana falta neste mês" : "faltam " + b.wl + (b.wl === 1 ? " semana" : " semanas")), id: b.id });
     else it.push({ d: Math.min(b.d || 1, c.N), n: b.n, a: b.a, id: b.id });
   });
   XS().forEach(function(x){ it.push({ d: Math.min(x.d, c.N), n: x.n, a: x.a, id: x.id, x: 1 }); });
-  it.sort(function(a,b){ return a.d - b.d; });
-
+  it.sort(function(a, b){ return a.d - b.d; });
   it.forEach(function(o){
-    var dn = o.d == 99 ? "" : WN[new Date(c.Y, c.M-1, o.d).getDay()] + " " + o.d + " · ",
-        done = S.paid[S.ym + o.id];
-    h += '<button class="row' + (done ? " done" : "") + '" data-a="tog" data-i="' + o.id + '">' +
+    var dn = o.d == 99 ? "" : WN[new Date(c.Y, c.M - 1, o.d).getDay()] + " " + o.d + " · ", done = S.paid[S.ym + o.id];
+    h += '<button class="row sm' + (done ? " done" : "") + '" data-a="tog" data-i="' + o.id + '">' +
          '<span class="chk">' + (done ? "✓" : "") + '</span>' +
          '<span class="grow"><b>' + o.n + '</b><small>' + (o.s || dn + (o.x ? "cai na conta" : "pagar")) + '</small></span>' +
-         '<span class="amt' + (o.x ? " in" : "") + '">' + (o.x ? "+" : "") + R(o.a) + '</span>' +
-         '</button>';
+         '<span class="amt' + (o.x ? " in" : "") + '">' + (o.x ? "+" : "") + R(o.a) + '</span></button>';
   });
-
-  return h.replace("<!--BAN-->", ban + spend + permH + snap) + '<p class="note">Toque numa conta pra marcar como paga. O mês seguinte começa limpo.</p>';
+  return h + '<p class="note">Toque numa conta pra marcar como paga. O mês seguinte começa limpo.</p>';
 }
 
 function vContas() {
@@ -1166,10 +1178,10 @@ function vCalendario() {
 
 function draw() {
   CC = {}; MC = {};
-  document.getElementById("tabs").innerHTML = ["Renda","Mês","Calendário","Saldo","Contas"].map(function(n,i){
+  document.getElementById("tabs").innerHTML = ["Renda","Mês","Marcar","Calendário","Saldo","Contas"].map(function(n,i){
     return '<button data-a="tab" data-i="'+i+'" class="'+(i==tab?"on":"")+'">'+n+'</button>';
   }).join("");
-  document.getElementById("view").innerHTML = [vRenda, vMes, vCalendario, vSaldo, vContas][tab]();
+  document.getElementById("view").innerHTML = [vRenda, vMes, vMarcar, vCalendario, vSaldo, vContas][tab]();
   
   var btnNotif = document.getElementById("btn-notif");
   if (btnNotif) {
@@ -1222,13 +1234,14 @@ document.addEventListener("change", function(e){
 document.addEventListener("click", function(e){
   var t = e.target.closest("[data-a]"); if (!t) return;
   var a = t.dataset.a, i = t.dataset.i;
-  if (a == "tab") tab = +i;
+  if (a == "tab") { tab = +i; window.scrollTo(0, 0); }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
     S.ym = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
     selDay = 1;
   }
   else if (a == "selday") selDay = +i;
+  else if (a == "tvenc") VOPEN = !VOPEN;
   else if (a == "tog") { var k = S.ym + i; S.paid[k] = !S.paid[k]; }
   else if (a == "wd") { var cur = ic("dias").slice(), x = cur.indexOf(+i); if (x < 0) cur.push(+i); else cur.splice(x, 1); setC("dias", cur); }
   else if (a == "rclr") { delete (S.real || {})[S.ym]; }
