@@ -217,9 +217,7 @@ function fix() {
   S.carry = !!S.carry;
   S.bills = S.bills || [];
   S.ex = S.ex || [];
-  S.bills.forEach(function(b){ if (!b.i) b.i = S.ym; if (!b.v) b.v = {};
-    if (!b.si && /^b\d{13}$/.test(b.id)) { var cd = new Date(+b.id.slice(1)), cm = cd.getFullYear() + "-" + ("0" + (cd.getMonth() + 1)).slice(-2); if (cm === b.i) b.si = cm + "-" + ("0" + cd.getDate()).slice(-2); }
-  });
+  S.bills.forEach(function(b){ if (!b.i) b.i = S.ym; if (!b.v) b.v = {}; });
   S.ex.forEach(function(x){ if (!x.i) x.i = S.ym; if (!x.v) x.v = {}; });
   if (!S.start) {
     var ms = [];
@@ -341,12 +339,10 @@ document.getElementById("logout-btn").addEventListener("click", function(){
   auth.signOut();
 });
 
-function siHoje(ym) { var d = new Date(), m = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2); return ym === m ? m + "-" + ("0" + d.getDate()).slice(-2) : ym + "-01"; }
 function onList(on) { var r = [], i; for (i = 1; i < on.length; i++) if (on[i]) r.push(i); return r; }
 function billPlan(b, ym, dias, tmd) {
   var pq = ym.split("-"), Y = +pq[0], M = +pq[1], N = new Date(Y, M, 0).getDate(), fdw = new Date(Y, M-1, 1).getDay(),
-      cu = (b.dm || {})[ym], custom = !!cu, sel = [], on = [], live = [], per = [], q, wkc = {}, tw = 0, cnt = 0, wl = {}, nk;
-  
+      cu = b.t === "m" ? null : (b.dm || {})[ym], custom = !!cu, sel = [], on = [], live = [], per = [], q, wkc = {}, tw = 0, cnt = 0, wl = {}, nk;
   if (cu) cu.forEach(function(d){ if (d >= 1 && d <= N) on[d] = true; });
   else {
     sel = b.t === "s" ? ((b.wd && b.wd.length) ? b.wd : dias) : (b.wd || [1,2,3,4,5]);
@@ -356,33 +352,17 @@ function billPlan(b, ym, dias, tmd) {
       for (q = 1; q <= N; q++) if (sel.indexOf(new Date(Y, M-1, q).getDay()) >= 0) on[q] = true;
     }
   }
-
-  var cut = 0;
-  if (b.t !== "m" && b.si) { var sm = b.si.slice(0, 7); if (sm === ym) cut = +b.si.slice(8, 10) || 0; else if (sm > ym) cut = N + 1; }
-  if (b.t === "dd") { for (q = 1; q < cut && q <= N; q++) on[q] = false; cut = 0; }
-
-  // Aplica o override manual do usuário (bdiário ou bsemanal desmarcado/marcado)
-  var bdw = S.bdw || {};
-  for (q = 1; q <= N; q++) {
-    var ov = bdw[ym + "_" + b.id + "_" + q];
-    if (ov === "n") on[q] = false;
-    else if (ov === "y") on[q] = true;
-  }
-  
-  for (q = 1; q < cut && q <= N; q++) on[q] = false;
-
   for (q = 1; q <= N; q++) if (on[q]) { nk = Math.floor((q - 1 + fdw) / 7); wkc[nk] = (wkc[nk] || 0) + 1; }
   for (q = 1; q <= N; q++) {
     if (!on[q]) continue;
     nk = Math.floor((q - 1 + fdw) / 7);
     if (b.t === "s") per[q] = custom ? b.a / (wkc[nk] || 1) : b.a / (sel.length || 1);
     else per[q] = b.a;
-    
+    if (b.t === "s" && tmd && q < tmd) continue; // semana que já passou: ignora
     live[q] = true; cnt++; tw += per[q]; wl[nk] = 1;
   }
-  return { on: on, live: live, per: per, sel: sel, custom: custom, cnt: cnt, tw: tw, wl: Object.keys(wl).length, cut: cut };
+  return { on: on, live: live, per: per, sel: sel, custom: custom, cnt: cnt, tw: tw, wl: Object.keys(wl).length };
 }
-
 function selNames(sel) {
   return [1,2,3,4,5,6,0].filter(function(i){ return sel.indexOf(i) >= 0; }).map(function(i){ return WN[i]; }).join(", ");
 }
@@ -917,32 +897,30 @@ function vContas() {
 
 function billDaysUI(b) {
   var pq = S.ym.split("-"), Yb = +pq[0], Mb = +pq[1], tn = new Date(), tmd = (tn.getFullYear() == Yb && tn.getMonth() + 1 == Mb) ? tn.getDate() : 0,
-      pl = billPlan(b, S.ym, ic("dias"), 0), N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
-      isS = b.t === "s", nn = pl.sel.length || 1, q, o = '';
-  
-  if (b.t === "s") o += '<div style="margin-top:10px"><label>Conta vale a partir de</label>' + inp("b", b.id, "si", b.si || "", "date") + '<div class="note" style="margin:4px 0 0">Dias antes dessa data não contam (ficam apagados no calendário).</div></div>';
-  if (b.t === "s") {
-    o += '<label style="display:block;margin-top:10px">Dias da semana previstos</label><div class="wds">' +
+      pl = billPlan(b, S.ym, ic("dias"), tmd), N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
+      isS = b.t === "s", isM = b.t === "m", nn = pl.sel.length || 1, q, o = '';
+  if (!isM) {
+    o += '<label style="display:block;margin-top:10px">' + (isS ? "Dias da semana previstos" : "Dias da semana em que você gasta") + '</label><div class="wds">' +
          [1,2,3,4,5,6,0].map(function(i){ return '<button class="' + (!pl.custom && pl.sel.indexOf(i) >= 0 ? "on" : "") + '" data-a="bwd" data-i="' + b.id + '" data-w="' + i + '">' + WN[i] + '</button>'; }).join("") + '</div>';
   }
-  
-  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Dia do vencimento no mês:" : b.t === "dd" ? "Toque em qualquer dia do mês (livre) para marcar/desmarcar:" : "Toque nos dias abaixo para marcar/desmarcar:") + '</label><div class="mini">';
+  o += '<label style="display:block;margin-top:12px">' + (isM ? "Dia do vencimento no mês:" : "Ou marque os dias exatos de " + mNome(S.ym)) + '</label><div class="mini">';
   WN.forEach(function(w){ o += '<span class="mh">' + w + '</span>'; });
   for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
-  for (q = 1; q <= N; q++) if (b.t !== "m" && pl.cut && q < pl.cut) o += '<button class="pass" disabled>' + q + '</button>'; else o += '<button class="' + (pl.on[q] ? "on" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
+  for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + (isS && tmd && q < tmd ? " pass" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
   o += '</div>';
-  if (b.t === "dd") o += '<div style="display:flex;gap:8px;margin-top:8px"><button class="add" style="flex:1;margin:0" data-a="bdall" data-i="' + b.id + '" data-m="all">Marcar o mês todo</button><button class="add" style="flex:1;margin:0" data-a="bdall" data-i="' + b.id + '" data-m="none">Limpar dias</button></div>';
-
   if (isS) {
-    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados.'
-         : R(b.a) + ' por semana ÷ ' + nn + (nn === 1 ? ' dia' : ' dias') + ' = <b>' + R(b.a / nn) + '</b> em cada dia marcado.') + '</div>';
-  } else if (b.t === "dd") {
-    o += '<div class="note" style="margin:6px 0 0">' + R(b.a) + ' por dia × ' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + ' = <b>' + R(pl.tw) + '</b> no mês.</div>';
-  } else if (b.t === "m") {
+    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos só pra este mês: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados de cada semana.'
+         : R(b.a) + ' por semana ÷ ' + nn + (nn === 1 ? ' dia' : ' dias') + ' = <b>' + R(b.a / nn) + '</b> em cada dia marcado. Por padrão uso os seus dias de trabalho.') + '</div>';
+    o += '<div class="note" style="margin:4px 0 0">' + (tmd
+         ? (pl.wl === 0 ? 'Neste mês <b>não falta nenhuma semana</b>: nada a separar. Dias que já passaram ficam de fora.'
+                        : 'Faltam <b>' + pl.wl + (pl.wl === 1 ? ' semana' : ' semanas') + '</b> neste mês (' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + '), total <b>' + R(pl.tw) + '</b>. Dias que já passaram ficam de fora (esmaecidos).')
+         : 'Neste mês: <b>' + pl.wl + (pl.wl === 1 ? ' semana' : ' semanas') + '</b>, total <b>' + R(pl.tw) + '</b>.') + '</div>';
+  } else if (isM) {
     o += '<div class="note" style="margin:6px 0 0">Vencimento no dia <b>' + (b.d || 1) + '</b>. Toque no calendário acima para mudar o dia.</div>';
+  } else {
+    o += '<div class="note" style="margin:6px 0 0">' + R(b.a) + ' por dia × ' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + ' = <b>' + R(pl.tw) + '</b> no mês.' + (pl.custom ? ' Dias escolhidos só pra este mês.' : '') + '</div>';
   }
-
-  if (pl.custom && b.t !== "m") o += '<button class="add" data-a="bdtclr" data-i="' + b.id + '" style="margin-top:8px">Restaurar padrão da conta</button>';
+  if (pl.custom && !isM) o += '<button class="add" data-a="bdtclr" data-i="' + b.id + '" style="margin-top:8px">Voltar aos dias da semana</button>';
   return o;
 }
 
@@ -1189,7 +1167,6 @@ document.addEventListener("change", function(e){
     var o = (sc == "b" ? S.bills : S.ex).filter(function(x){ return x.id == t.dataset.i; })[0];
     if (o) {
       if (f == "f") { if (v && v < S.ym) v = S.ym; o.f = v; }
-      else if (f == "si") { if (v && v.slice(0, 7) < o.i) v = o.i + "-01"; if (v) o.si = v; else delete o.si; }
       else {
         o.v = o.v || {}; o.v[S.ym] = o.v[S.ym] || {};
         o.v[S.ym][f] = (f == "a" || f == "d") ? (parseFloat(v) || 0) : v;
@@ -1243,36 +1220,20 @@ document.addEventListener("click", function(e){
   else if (a == "bdt") {
     var bo3 = S.bills.filter(function(z){ return z.id == i; })[0];
     if (bo3) {
-      if (bo3.t === "m") {
-        bo3.v = bo3.v || {};
-        bo3.v[S.ym] = bo3.v[S.ym] || {};
-        bo3.v[S.ym].d = +t.dataset.w;
-        if (bo3.dm) delete bo3.dm[S.ym];
+      var e3 = eff(bo3, S.ym), dn = +t.dataset.w;
+      if (e3.t === "m") {
+        bo3.v = bo3.v || {}; bo3.v[S.ym] = bo3.v[S.ym] || {}; bo3.v[S.ym].d = dn;
       } else {
-        S.bdw = S.bdw || {};
-        var dk = S.ym + "_" + bo3.id + "_" + t.dataset.w;
-        var pl2 = billPlan(bo3, S.ym, ic("dias"), 0);
-        var currentlyOn = !!pl2.on[+t.dataset.w];
-        if (!(pl2.cut && +t.dataset.w < pl2.cut)) S.bdw[dk] = currentlyOn ? "n" : "y";
+        var lst = onList(billPlan(e3, S.ym, ic("dias"), 0).on), ix = lst.indexOf(dn);
+        if (ix < 0) lst.push(dn); else if (!(e3.t === "s" && lst.length === 1)) lst.splice(ix, 1);
+        lst.sort(function(x, y){ return x - y; });
+        bo3.dm = bo3.dm || {}; bo3.dm[S.ym] = lst;
       }
-    }
-  }
-  else if (a == "bdall") {
-    var bo5 = S.bills.filter(function(z){ return z.id == i; })[0];
-    if (bo5) {
-      S.bdw = S.bdw || {};
-      var pl5 = billPlan(bo5, S.ym, ic("dias"), 0), N5 = new Date(+S.ym.slice(0,4), +S.ym.slice(5), 0).getDate(), q5;
-      for (q5 = (pl5.cut || 1); q5 <= N5; q5++) S.bdw[S.ym + "_" + bo5.id + "_" + q5] = t.dataset.m === "all" ? "y" : "n";
     }
   }
   else if (a == "bdtclr") {
     var bo4 = S.bills.filter(function(z){ return z.id == i; })[0];
-    if (bo4) {
-      if (bo4.dm) delete bo4.dm[S.ym];
-      S.bdw = S.bdw || {};
-      var prefix = S.ym + "_" + bo4.id + "_";
-      Object.keys(S.bdw).forEach(function(k){ if (k.indexOf(prefix) === 0) delete S.bdw[k]; });
-    }
+    if (bo4 && bo4.dm) delete bo4.dm[S.ym];
   }
   else if (a == "bwd") {
     var bo = S.bills.filter(function(z){ return z.id == i; })[0];
@@ -1299,7 +1260,7 @@ document.addEventListener("click", function(e){
       alert("Este navegador não suporta notificações.");
     }
   }
-  else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a: 0, d: 1, t: "m", i: S.ym, si: siHoje(S.ym), f: "", v: {} });
+  else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a: 0, d: 1, t: "m", i: S.ym, f: "", v: {} });
   else if (a == "addx") S.ex.push({ id: "x" + Date.now(), n: "Nova renda", a: 0, d: 1, i: S.ym, f: "", v: {} });
   else if (a == "delb" || a == "delx") {
     var key = a == "delb" ? "bills" : "ex", o = S[key].filter(function(z){ return z.id == i; })[0];
