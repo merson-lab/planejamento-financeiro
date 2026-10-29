@@ -121,7 +121,7 @@ label { font-size: 13px; color: var(--mut); font-weight: 700; }
 .mini .mh { text-align: center; font-size: 11px; color: var(--mut); font-weight: 700; }
 .mini button { padding: 8px 0; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; font-size: 13px; cursor: pointer; }
 .mini button.on { background: var(--c); border-color: var(--c); color: var(--bg); }
-.mini button.pass { opacity: 0.4; }
+.mini button.pass { opacity: 0.6; }
 .mini .bl { visibility: hidden; }
 
 .bar { height: 8px; background: var(--line); border-radius: 6px; overflow: hidden; margin: 0 0 6px; }
@@ -358,9 +358,6 @@ function billPlan(b, ym, dias, tmd) {
   for (q = 1; q <= N; q++) {
     if (!on[q]) continue;
     
-    // Ignorar dias que já passaram no mês atual para contas semanais ou diárias (inteligência para novos usuários)
-    if (tmd && q < tmd && (b.t === "s" || b.t === "dd")) continue;
-
     nk = Math.floor((q - 1 + fdw) / 7);
     if (b.t === "s") per[q] = custom ? b.a / (wkc[nk] || 1) : b.a / (sel.length || 1);
     else per[q] = b.a;
@@ -862,7 +859,7 @@ function vMes() {
   var it = [];
   c.L.forEach(function(b){
     if (b.t == "dd") return;
-    if (b.t == "s") it.push({ d: 99, n: b.n, a: b.tw, s: R(b.a) + " por semana · " + (b.wl === 0 ? "nenhuma semana falta neste mês" : "faltam " + b.wl + (b.wl === 1 ? " semana" : " semanas")) + " · " + (b.custom ? "dias " + onList(b.on).join(", ") : (b.sel.length >= 7 ? "todo dia" : "nos dias: " + selNames(b.sel))), id: b.id, w: 1 });
+    if (b.t == "s") it.push({ d: 99, n: b.n, a: b.tw, s: R(b.a) + " por semana · " + (b.wl === 0 ? "nenhuma semana falta neste mês" : "faltam " + b.wl + (b.wl === 1 ? " semana" : " semanas")) + " · " + (b.custom ? "dias selecionados no calendário" : (b.sel.length >= 7 ? "todo dia" : "nos dias: " + selNames(b.sel))), id: b.id, w: 1 });
     else it.push({ d: Math.min(b.d || 1, c.N), n: b.n, a: b.a, id: b.id });
   });
   XS().forEach(function(x){ it.push({ d: Math.min(x.d, c.N), n: x.n, a: x.a, id: x.id, x: 1 }); });
@@ -903,23 +900,23 @@ function vContas() {
 }
 
 function billDaysUI(b) {
-  var pq = S.ym.split("-"), Yb = +pq[0], Mb = +pq[1], tn = new Date(), tmd = (tn.getFullYear() == Yb && tn.getMonth() + 1 == Mb) ? tn.getDate() : 0,
-      pl = billPlan(b, S.ym, ic("dias"), tmd), N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
+  var pq = S.ym.split("-"), Yb = +pq[0], Mb = +pq[1],
+      pl = billPlan(b, S.ym, ic("dias"), 0), N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
       isS = b.t === "s", nn = pl.sel.length || 1, q, o = '';
   
   if (b.t === "s" || b.t === "dd") {
-    o += '<label style="display:block;margin-top:10px">' + (isS ? "Dias da semana previstos" : "Dias da semana em que você gasta") + '</label><div class="wds">' +
+    o += '<label style="display:block;margin-top:10px">' + (isS ? "Dias da semana padrão" : "Dias da semana em que você gasta") + '</label><div class="wds">' +
          [1,2,3,4,5,6,0].map(function(i){ return '<button class="' + (!pl.custom && pl.sel.indexOf(i) >= 0 ? "on" : "") + '" data-a="bwd" data-i="' + b.id + '" data-w="' + i + '">' + WN[i] + '</button>'; }).join("") + '</div>';
   }
   
-  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Dia do vencimento no mês:" : "Ou marque os dias exatos de " + mNome(S.ym)) + '</label><div class="mini">';
+  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Dia do vencimento no mês:" : "Toque nos dias do mês para escolher exatamente quando pagar:") + '</label><div class="mini">';
   WN.forEach(function(w){ o += '<span class="mh">' + w + '</span>'; });
   for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
-  for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + ((isS || b.t === "dd") && tmd && q < tmd ? " pass" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
+  for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
   o += '</div>';
 
   if (isS) {
-    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos só pra este mês: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados.'
+    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos no calendário acima. O valor da semana (' + R(b.a) + ') é dividido entre os dias marcados.'
          : R(b.a) + ' por semana ÷ ' + nn + (nn === 1 ? ' dia' : ' dias') + ' = <b>' + R(b.a / nn) + '</b> em cada dia marcado.') + '</div>';
   } else if (b.t === "dd") {
     o += '<div class="note" style="margin:6px 0 0">' + R(b.a) + ' por dia × ' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + ' = <b>' + R(pl.tw) + '</b> no mês.</div>';
