@@ -205,7 +205,7 @@ function getKey() {
 }
 
 function fix() {
-  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {};
+  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {};
   if (!S.tipoRenda) S.tipoRenda = "diaria";
   if (S.dia === undefined) S.dia = 0;
   if (!S.dias) S.dias = [1,2,3,4,5];
@@ -353,6 +353,14 @@ function billPlan(b, ym, dias, tmd) {
       for (q = 1; q <= N; q++) if (sel.indexOf(new Date(Y, M-1, q).getDay()) >= 0) on[q] = true;
     }
   }
+
+  // Aplica o override manual do usuário (bdiário ou bsemanal desmarcado/marcado)
+  var bdw = S.bdw || {};
+  for (q = 1; q <= N; q++) {
+    var ov = bdw[ym + "_" + b.id + "_" + q];
+    if (ov === "n") on[q] = false;
+    else if (ov === "y") on[q] = true;
+  }
   
   for (q = 1; q <= N; q++) if (on[q]) { nk = Math.floor((q - 1 + fdw) / 7); wkc[nk] = (wkc[nk] || 0) + 1; }
   for (q = 1; q <= N; q++) {
@@ -360,9 +368,6 @@ function billPlan(b, ym, dias, tmd) {
     nk = Math.floor((q - 1 + fdw) / 7);
     if (b.t === "s") per[q] = custom ? b.a / (wkc[nk] || 1) : b.a / (sel.length || 1);
     else per[q] = b.a;
-    
-    // Ignorar dias que já passaram no mês atual para contas semanais ou diárias
-    if (tmd && q < tmd && (b.t === "s" || b.t === "dd")) continue;
     
     live[q] = true; cnt++; tw += per[q]; wl[nk] = 1;
   }
@@ -881,7 +886,7 @@ function vMes() {
 }
 
 function vContas() {
-  var h = navH() + '<p class="note">Você está editando as contas de <b>' + mNome(S.ym) + '</b>. O que mudar aqui vale deste mês em diante e <b>não altera os meses anteriores</b>.</p>';
+  var h = navH() + '<p class="note">Você está editando as contas de <b>' + mNome(S.ym) + '</b>. Toque em qualquer dia no calendário abaixo para marcar ou desmarcar livremente se o dia conta ou não.</p>';
   var LB = S.bills.filter(function(b){ return act(b, S.ym); }).map(function(b){ return eff(b, S.ym); });
   if (LB.length === 0) {
     h += '<div class="card" style="text-align:center;color:var(--mut);padding:16px;">Nenhuma conta ativa neste mês.</div>';
@@ -903,7 +908,7 @@ function vContas() {
 
 function billDaysUI(b) {
   var pq = S.ym.split("-"), Yb = +pq[0], Mb = +pq[1], tn = new Date(), tmd = (tn.getFullYear() == Yb && tn.getMonth() + 1 == Mb) ? tn.getDate() : 0,
-      pl = billPlan(b, S.ym, ic("dias"), tmd), N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
+      pl = billPlan(b, S.ym, ic("dias"), 0), N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
       isS = b.t === "s", nn = pl.sel.length || 1, q, o = '';
   
   if (b.t === "s" || b.t === "dd") {
@@ -911,14 +916,14 @@ function billDaysUI(b) {
          [1,2,3,4,5,6,0].map(function(i){ return '<button class="' + (!pl.custom && pl.sel.indexOf(i) >= 0 ? "on" : "") + '" data-a="bwd" data-i="' + b.id + '" data-w="' + i + '">' + WN[i] + '</button>'; }).join("") + '</div>';
   }
   
-  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Dia do vencimento no mês:" : "Ou marque os dias exatos de " + mNome(S.ym)) + '</label><div class="mini">';
+  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Dia do vencimento no mês:" : "Toque nos dias abaixo para marcar/desmarcar:") + '</label><div class="mini">';
   WN.forEach(function(w){ o += '<span class="mh">' + w + '</span>'; });
   for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
-  for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + ((isS || b.t === "dd") && tmd && q < tmd ? " pass" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
+  for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
   o += '</div>';
 
   if (isS) {
-    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos só pra este mês: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados.'
+    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados.'
          : R(b.a) + ' por semana ÷ ' + nn + (nn === 1 ? ' dia' : ' dias') + ' = <b>' + R(b.a / nn) + '</b> em cada dia marcado.') + '</div>';
   } else if (b.t === "dd") {
     o += '<div class="note" style="margin:6px 0 0">' + R(b.a) + ' por dia × ' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + ' = <b>' + R(pl.tw) + '</b> no mês.</div>';
@@ -1231,16 +1236,22 @@ document.addEventListener("click", function(e){
         bo3.v[S.ym].d = +t.dataset.w;
         if (bo3.dm) delete bo3.dm[S.ym];
       } else {
-        var e3 = eff(bo3, S.ym), lst = onList(billPlan(e3, S.ym, ic("dias"), 0).on), dn = +t.dataset.w, ix = lst.indexOf(dn);
-        if (ix < 0) lst.push(dn); else if (!(e3.t === "s" && lst.length === 1)) lst.splice(ix, 1);
-        lst.sort(function(x, y){ return x - y; });
-        bo3.dm = bo3.dm || {}; bo3.dm[S.ym] = lst;
+        S.bdw = S.bdw || {};
+        var dk = S.ym + "_" + bo3.id + "_" + t.dataset.w;
+        var pl2 = billPlan(bo3, S.ym, ic("dias"), 0);
+        var currentlyOn = !!pl2.on[+t.dataset.w];
+        S.bdw[dk] = currentlyOn ? "n" : "y";
       }
     }
   }
   else if (a == "bdtclr") {
     var bo4 = S.bills.filter(function(z){ return z.id == i; })[0];
-    if (bo4 && bo4.dm) delete bo4.dm[S.ym];
+    if (bo4) {
+      if (bo4.dm) delete bo4.dm[S.ym];
+      S.bdw = S.bdw || {};
+      var prefix = S.ym + "_" + bo4.id + "_";
+      Object.keys(S.bdw).forEach(function(k){ if (k.indexOf(prefix) === 0) delete S.bdw[k]; });
+    }
   }
   else if (a == "bwd") {
     var bo = S.bills.filter(function(z){ return z.id == i; })[0];
