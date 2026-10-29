@@ -229,9 +229,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .app-eyebrow { margin: 0 0 2px; font-size: 9px; letter-spacing: .13em; font-weight: 800; color: var(--mut); }
 .app-header h1 { text-align: left; font-size: 23px; line-height: 1.15; letter-spacing: -.045em; margin: 0; }
 .logout-btn {
-  width: 42px; height: 42px; flex: none; border: 1px solid var(--line); border-radius: 14px;
-  background: var(--card); color: var(--mut); font-size: 21px; transform: rotate(45deg); cursor: pointer;
+  min-height: 38px; width: auto; flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--card); color: var(--mut); font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; white-space: nowrap;
 }
+.logout-btn span:first-child { font-size: 17px; line-height: 1; }
+.privacy-link-wrap { text-align: center; margin: 18px 0 0; font-size: 13px; }
+.privacy-link { color: var(--brand); text-decoration: underline; text-underline-offset: 3px; font-weight: 700; }
 .header-actions { display:flex; align-items:center; gap:8px; flex:none; }
 .delete-account-btn {
   min-height: 38px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--bad) 30%, var(--line));
@@ -239,10 +243,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   font-weight: 750; cursor: pointer;
 }
 .delete-account-btn:disabled { opacity:.6; cursor:wait; }
-@media (max-width: 360px) {
-  .header-actions { gap:5px; }
-  .delete-account-btn { padding:7px; font-size:10px; }
-  .logout-btn { width:36px; height:36px; }
+@media (max-width: 390px) {
+  .app-header { flex-wrap: wrap; gap: 10px; }
+  .header-actions { gap: 6px; margin-left: auto; }
+  .delete-account-btn { padding: 7px 8px; font-size: 10px; }
+  .logout-btn { min-height: 36px; padding: 7px 8px; font-size: 10px; }
 }
 .sync { margin: -8px 0 14px; font-size: 11px; }
 #btn-notif { border-radius: 14px !important; padding: 12px 14px !important; font-size: 12px; box-shadow: 0 3px 10px rgba(15,35,45,.03); }
@@ -369,6 +374,7 @@ label { font-size: 12px; letter-spacing: .01em; }
     <div class="au-msg" id="auth-msg"></div>
 
     <p class="au-switch"><span id="auth-switch-t">Ainda não tem conta?</span> <button type="button" id="auth-switch">Criar conta</button></p>
+    <p class="privacy-link-wrap"><a class="privacy-link" href="politica_privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a></p>
   </div>
 </div>
 
@@ -381,7 +387,7 @@ label { font-size: 12px; letter-spacing: .01em; }
     </div>
     <div class="header-actions">
       <button id="delete-account-btn" class="delete-account-btn" type="button">Excluir conta</button>
-      <button id="logout-btn" class="logout-btn" type="button" aria-label="Sair da conta" title="Sair da conta">↗</button>
+      <button id="logout-btn" class="logout-btn" type="button" aria-label="Sair da conta" title="Sair da conta"><span aria-hidden="true">⇥</span><span>Sair da conta</span></button>
     </div>
   </header>
   <div class="sync" id="sync"></div>
