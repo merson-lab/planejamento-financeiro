@@ -929,6 +929,7 @@ function billDaysUI(b) {
   for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
   for (q = 1; q <= N; q++) if (b.t !== "m" && pl.cut && q < pl.cut) o += '<button class="pass" disabled>' + q + '</button>'; else o += '<button class="' + (pl.on[q] ? "on" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
   o += '</div>';
+  if (b.t === "dd") o += '<div style="display:flex;gap:8px;margin-top:8px"><button class="add" style="flex:1;margin:0" data-a="bdall" data-i="' + b.id + '" data-m="all">Marcar todos daqui pra frente</button><button class="add" style="flex:1;margin:0" data-a="bdall" data-i="' + b.id + '" data-m="none">Limpar dias</button></div>';
 
   if (isS) {
     o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados.'
@@ -1252,6 +1253,14 @@ document.addEventListener("click", function(e){
         var currentlyOn = !!pl2.on[+t.dataset.w];
         if (!(pl2.cut && +t.dataset.w < pl2.cut)) S.bdw[dk] = currentlyOn ? "n" : "y";
       }
+    }
+  }
+  else if (a == "bdall") {
+    var bo5 = S.bills.filter(function(z){ return z.id == i; })[0];
+    if (bo5) {
+      S.bdw = S.bdw || {};
+      var pl5 = billPlan(bo5, S.ym, ic("dias"), 0), N5 = new Date(+S.ym.slice(0,4), +S.ym.slice(5), 0).getDate(), q5;
+      for (q5 = (pl5.cut || 1); q5 <= N5; q5++) S.bdw[S.ym + "_" + bo5.id + "_" + q5] = t.dataset.m === "all" ? "y" : "n";
     }
   }
   else if (a == "bdtclr") {
