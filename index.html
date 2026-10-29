@@ -170,6 +170,151 @@ textarea { font: inherit; }
 .au-msg.ok { color: var(--ok); }
 .au-switch { text-align: center; color: var(--mut); font-size: 16px; margin: 22px 0 0; }
 .au-switch button { border: 0; background: transparent; color: var(--brand); font-weight: 800; font-size: 16px; cursor: pointer; padding: 0; }
+
+
+/* ==========================================
+   REDESIGN 2026 — APLICAÇÃO PRINCIPAL
+   Mantém os IDs, classes e ações usados pelo JavaScript.
+========================================== */
+:root {
+  --bg: #f4f7f8;
+  --card: #ffffff;
+  --ink: #17252d;
+  --mut: #71808a;
+  --line: #e1e8eb;
+  --c: #167d78;
+  --v: #5268d8;
+  --ok: #21845b;
+  --bad: #c84b54;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10191e;
+    --card: #19252b;
+    --ink: #edf4f5;
+    --mut: #9aabb3;
+    --line: #2a3a42;
+    --c: #55c5b8;
+    --v: #9aa9ff;
+    --ok: #62d4a0;
+    --bad: #ff8b91;
+  }
+}
+body {
+  max-width: 560px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px));
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  line-height: 1.45;
+  letter-spacing: -.01em;
+}
+button, input, select, textarea { font-family: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--c) 38%, transparent);
+  outline-offset: 2px;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 0 18px;
+}
+.app-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.app-mark {
+  width: 45px; height: 45px; flex: none; display: grid; place-items: center;
+  border-radius: 15px; background: linear-gradient(145deg, #198b81, #12645f);
+  color: #fff; font-size: 28px; font-weight: 800; box-shadow: 0 7px 16px rgba(22,125,120,.2);
+}
+.app-eyebrow { margin: 0 0 2px; font-size: 9px; letter-spacing: .13em; font-weight: 800; color: var(--mut); }
+.app-header h1 { text-align: left; font-size: 23px; line-height: 1.15; letter-spacing: -.045em; margin: 0; }
+.logout-btn {
+  width: 42px; height: 42px; flex: none; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--card); color: var(--mut); font-size: 21px; transform: rotate(45deg); cursor: pointer;
+}
+.sync { margin: -8px 0 14px; font-size: 11px; }
+#btn-notif { border-radius: 14px !important; padding: 12px 14px !important; font-size: 12px; box-shadow: 0 3px 10px rgba(15,35,45,.03); }
+.tabs {
+  position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: 0;
+  width: min(560px, 100%); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px; margin: 0; padding: 9px 9px calc(9px + env(safe-area-inset-bottom, 0px));
+  overflow: visible; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--card) 94%, transparent);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 -8px 24px rgba(20,35,45,.06);
+}
+.tabs button {
+  min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 6px 1px 5px; border: 0; border-radius: 12px; background: transparent; color: var(--mut);
+  font-size: 9px; line-height: 1.1; font-weight: 750; white-space: nowrap;
+}
+.tabs button::before { display: block; font-size: 18px; line-height: 1.15; }
+.tabs button:nth-child(1)::before { content: "↗"; }
+.tabs button:nth-child(2)::before { content: "▦"; }
+.tabs button:nth-child(3)::before { content: "✓"; }
+.tabs button:nth-child(4)::before { content: "▣"; }
+.tabs button:nth-child(5)::before { content: "◉"; }
+.tabs button:nth-child(6)::before { content: "▤"; }
+.tabs button.on { color: var(--c); background: color-mix(in srgb, var(--c) 11%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 13%, transparent); }
+.nav {
+  display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; gap: 10px;
+  margin: 0 0 14px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  font-size: 15px; box-shadow: 0 3px 12px rgba(20,35,45,.025);
+}
+.nav b { text-align: center; text-transform: capitalize; font-size: 15px; letter-spacing: -.02em; }
+.nav button { width: 38px; height: 38px; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; font-size: 22px; color: var(--ink); }
+.cards { gap: 10px; margin-bottom: 14px; }
+.cd, .card, .big {
+  border: 1px solid var(--line); border-radius: 18px; padding: 15px;
+  box-shadow: 0 5px 18px rgba(25,45,55,.035);
+}
+.cd small { font-size: 11px; font-weight: 650; letter-spacing: .01em; }
+.cd b { display: block; margin-top: 5px; font-size: clamp(17px, 4.5vw, 22px); letter-spacing: -.04em; overflow-wrap: anywhere; }
+.big { border: 1px solid color-mix(in srgb, var(--v) 28%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--v) 7%, var(--card)), var(--card) 72%); }
+.card { margin-bottom: 14px; }
+.card > b, .big > b { font-size: 15px; letter-spacing: -.02em; }
+.card input, .card select, .fld input, .fld select {
+  min-height: 44px; padding: 10px 12px; border-radius: 12px; border-color: var(--line); background: var(--bg);
+}
+label { font-size: 12px; letter-spacing: .01em; }
+.add, .del {
+  min-height: 45px; padding: 11px 14px; border-radius: 13px; margin-top: 9px;
+  font-size: 13px; transition: transform .15s ease, filter .15s ease;
+}
+.add:active, .del:active, .tabs button:active, .nav button:active { transform: scale(.98); }
+.row {
+  gap: 11px; border: 1px solid var(--line); border-radius: 15px; padding: 13px;
+  margin-bottom: 9px; box-shadow: 0 3px 10px rgba(20,35,45,.025);
+}
+.row b { letter-spacing: -.015em; }
+.row.done { opacity: .62; }
+.chk { width: 25px; height: 25px; border-radius: 9px; }
+.grow small { line-height: 1.45; }
+.amt { letter-spacing: -.02em; }
+.g2 { gap: 9px; }
+.note { font-size: 12px; line-height: 1.55; }
+.warn, .okb, .alert-box { border-radius: 14px; padding: 12px 14px; }
+.wds { gap: 6px; }
+.wds button { border-radius: 10px; padding: 11px 0; }
+.wds button.on { color: #fff; }
+.cal-grid { gap: 5px; }
+.cal-day { min-height: 59px; padding: 5px; border-radius: 10px; }
+.cal-day.hj { border-width: 2px; }
+.cal-day.sel { box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 13%, transparent); }
+.cal-num { font-size: 12px; }
+.cal-badge { border-radius: 5px; }
+.mk { gap: 5px; }
+.mk button, .mk .off { min-height: 48px; border-radius: 10px; }
+.mini button { border-radius: 9px; }
+.bar { height: 9px; border-radius: 10px; }
+.au-card { border-radius: 26px; }
+@media (min-width: 430px) {
+  body { padding-left: 20px; padding-right: 20px; }
+  .tabs { padding-left: 15px; padding-right: 15px; }
+  .tabs button { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+
 </style>
 </head>
 <body>
@@ -217,13 +362,13 @@ textarea { font: inherit; }
 
 <!-- APLICAÇÃO PRINCIPAL -->
 <div id="app-screen" style="display:none;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-    <h1>Planejamento Completo</h1>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
-      <button id="delete-account-btn" class="del" style="width:auto;margin-top:0;font-size:12px;padding:6px 8px;">Excluir conta</button>
-      <button id="logout-btn" style="font-size:12px; padding:6px 10px; border-radius:6px; border:1px solid var(--line); background:var(--card); cursor:pointer;">Sair da Conta</button>
+  <header class="app-header">
+    <div class="app-brand">
+      <span class="app-mark" aria-hidden="true">↗</span>
+      <div><p class="app-eyebrow">SEU DINHEIRO, SOB CONTROLE</p><h1>Planejamento</h1></div>
     </div>
-  </div>
+    <button id="logout-btn" class="logout-btn" type="button" aria-label="Sair da conta" title="Sair da conta">↗</button>
+  </header>
   <div class="sync" id="sync"></div>
   <div style="margin-bottom: 10px;"><button class="add" data-a="notif" id="btn-notif" style="margin-top:0;background:var(--card);color:var(--ink);">🔔 Avisar vencimentos quando eu abrir o app</button></div>
   <div class="tabs" id="tabs"></div>
@@ -451,74 +596,6 @@ $a("auth-google").addEventListener("click", function(){
 
 document.getElementById("logout-btn").addEventListener("click", function(){
   auth.signOut();
-});
-
-// EXCLUSÃO DA CONTA: reautentica, apaga o documento de nuvem do usuário,
-// remove o cache local deste usuário e só então exclui a conta do Firebase Auth.
-function deleteAccountError(err) {
-  var c = (err && err.code) || "";
-  if (c === "auth/wrong-password" || c === "auth/invalid-credential") return "Senha incorreta. Nenhum dado foi excluído.";
-  if (c === "auth/requires-recent-login") return "Por segurança, entre novamente na conta e tente excluir de novo.";
-  if (c === "auth/popup-closed-by-user" || c === "auth/cancelled-popup-request") return "Exclusão cancelada. Nada foi excluído.";
-  return "Não foi possível concluir a exclusão: " + ((err && err.message) || c || "erro desconhecido");
-}
-
-function reauthenticateForDeletion(user) {
-  var providers = (user.providerData || []).map(function(p){ return p.providerId; });
-  if (providers.indexOf("password") >= 0) {
-    var pass = window.prompt("Por segurança, digite sua senha atual para confirmar a exclusão da conta:");
-    if (pass === null) return Promise.reject({code:"auth/popup-closed-by-user"});
-    if (!pass) return Promise.reject({code:"auth/missing-password", message:"Digite sua senha para continuar."});
-    var cred = firebase.auth.EmailAuthProvider.credential(user.email, pass);
-    return user.reauthenticateWithCredential(cred);
-  }
-  if (providers.indexOf("google.com") >= 0) {
-    var provider = new firebase.auth.GoogleAuthProvider();
-    return user.reauthenticateWithPopup(provider);
-  }
-  return Promise.reject({code:"auth/requires-recent-login", message:"Entre novamente para confirmar sua identidade."});
-}
-
-document.getElementById("delete-account-btn").addEventListener("click", function(){
-  var user = auth.currentUser;
-  if (!user || !currentUserUid) {
-    alert("Entre na sua conta antes de solicitar a exclusão.");
-    return;
-  }
-  var ok = window.confirm("Excluir sua conta permanentemente? Seus dados financeiros sincronizados desta conta também serão apagados. Esta ação não pode ser desfeita.");
-  if (!ok) return;
-  var typed = window.prompt('Para confirmar, digite EXCLUIR (em letras maiúsculas):');
-  if (typed !== "EXCLUIR") {
-    alert("Exclusão cancelada. Nenhum dado foi apagado.");
-    return;
-  }
-
-  var btn = document.getElementById("delete-account-btn");
-  btn.disabled = true;
-  btn.textContent = "Excluindo…";
-  setSync("🔐 Confirmando sua identidade…");
-  var uid = user.uid;
-  reauthenticateForDeletion(user).then(function(){
-    if (CLOUD.timer) clearTimeout(CLOUD.timer);
-    if (unsubscribeSync) { unsubscribeSync(); unsubscribeSync = null; }
-    CLOUD.saving = false; CLOUD.again = false;
-    setSync("🗑️ Removendo seus dados…");
-    return db.collection("users").doc(uid).delete();
-  }).then(function(){
-    // Apaga somente o cache associado a este UID; não mexe nos dados de outros usuários.
-    try { localStorage.removeItem("plano-v2-" + uid); } catch(e) {}
-    return user.delete();
-  }).then(function(){
-    currentUserUid = null;
-    S = createEmptyState();
-    alert("Sua conta e os dados financeiros sincronizados foram excluídos.");
-    // O listener de autenticação leva o app de volta à tela de login.
-  }).catch(function(err){
-    btn.disabled = false;
-    btn.textContent = "Excluir conta";
-    setSync("");
-    alert(deleteAccountError(err));
-  });
 });
 
 function onList(on) { var r = [], i; for (i = 1; i < on.length; i++) if (on[i]) r.push(i); return r; }
