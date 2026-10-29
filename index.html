@@ -170,6 +170,163 @@ textarea { font: inherit; }
 .au-msg.ok { color: var(--ok); }
 .au-switch { text-align: center; color: var(--mut); font-size: 16px; margin: 22px 0 0; }
 .au-switch button { border: 0; background: transparent; color: var(--brand); font-weight: 800; font-size: 16px; cursor: pointer; padding: 0; }
+
+
+/* ==========================================
+   REDESIGN 2026 — APLICAÇÃO PRINCIPAL
+   Mantém os IDs, classes e ações usados pelo JavaScript.
+========================================== */
+:root {
+  --bg: #f4f7f8;
+  --card: #ffffff;
+  --ink: #17252d;
+  --mut: #71808a;
+  --line: #e1e8eb;
+  --c: #167d78;
+  --v: #5268d8;
+  --ok: #21845b;
+  --bad: #c84b54;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10191e;
+    --card: #19252b;
+    --ink: #edf4f5;
+    --mut: #9aabb3;
+    --line: #2a3a42;
+    --c: #55c5b8;
+    --v: #9aa9ff;
+    --ok: #62d4a0;
+    --bad: #ff8b91;
+  }
+}
+body {
+  max-width: 560px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px));
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  line-height: 1.45;
+  letter-spacing: -.01em;
+}
+button, input, select, textarea { font-family: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--c) 38%, transparent);
+  outline-offset: 2px;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 0 18px;
+}
+.app-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.app-mark {
+  width: 45px; height: 45px; flex: none; display: grid; place-items: center;
+  border-radius: 15px; background: linear-gradient(145deg, #198b81, #12645f);
+  color: #fff; font-size: 28px; font-weight: 800; box-shadow: 0 7px 16px rgba(22,125,120,.2);
+}
+.app-eyebrow { margin: 0 0 2px; font-size: 9px; letter-spacing: .13em; font-weight: 800; color: var(--mut); }
+.app-header h1 { text-align: left; font-size: 23px; line-height: 1.15; letter-spacing: -.045em; margin: 0; }
+.logout-btn {
+  width: 42px; height: 42px; flex: none; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--card); color: var(--mut); font-size: 21px; transform: rotate(45deg); cursor: pointer;
+}
+.header-actions { display:flex; align-items:center; gap:8px; flex:none; }
+.delete-account-btn {
+  min-height: 38px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--bad) 30%, var(--line));
+  border-radius: 12px; background: var(--card); color: var(--bad); font: inherit; font-size: 11px;
+  font-weight: 750; cursor: pointer;
+}
+.delete-account-btn:disabled { opacity:.6; cursor:wait; }
+@media (max-width: 360px) {
+  .header-actions { gap:5px; }
+  .delete-account-btn { padding:7px; font-size:10px; }
+  .logout-btn { width:36px; height:36px; }
+}
+.sync { margin: -8px 0 14px; font-size: 11px; }
+#btn-notif { border-radius: 14px !important; padding: 12px 14px !important; font-size: 12px; box-shadow: 0 3px 10px rgba(15,35,45,.03); }
+.tabs {
+  position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); bottom: 0;
+  width: min(560px, 100%); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px; margin: 0; padding: 9px 9px calc(9px + env(safe-area-inset-bottom, 0px));
+  overflow: visible; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--card) 94%, transparent);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 -8px 24px rgba(20,35,45,.06);
+}
+.tabs button {
+  min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 6px 1px 5px; border: 0; border-radius: 12px; background: transparent; color: var(--mut);
+  font-size: 9px; line-height: 1.1; font-weight: 750; white-space: nowrap;
+}
+.tabs button::before { display: block; font-size: 18px; line-height: 1.15; }
+.tabs button:nth-child(1)::before { content: "↗"; }
+.tabs button:nth-child(2)::before { content: "▦"; }
+.tabs button:nth-child(3)::before { content: "✓"; }
+.tabs button:nth-child(4)::before { content: "▣"; }
+.tabs button:nth-child(5)::before { content: "◉"; }
+.tabs button:nth-child(6)::before { content: "▤"; }
+.tabs button.on { color: var(--c); background: color-mix(in srgb, var(--c) 11%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 13%, transparent); }
+.nav {
+  display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; gap: 10px;
+  margin: 0 0 14px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  font-size: 15px; box-shadow: 0 3px 12px rgba(20,35,45,.025);
+}
+.nav b { text-align: center; text-transform: capitalize; font-size: 15px; letter-spacing: -.02em; }
+.nav button { width: 38px; height: 38px; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; font-size: 22px; color: var(--ink); }
+.cards { gap: 10px; margin-bottom: 14px; }
+.cd, .card, .big {
+  border: 1px solid var(--line); border-radius: 18px; padding: 15px;
+  box-shadow: 0 5px 18px rgba(25,45,55,.035);
+}
+.cd small { font-size: 11px; font-weight: 650; letter-spacing: .01em; }
+.cd b { display: block; margin-top: 5px; font-size: clamp(17px, 4.5vw, 22px); letter-spacing: -.04em; overflow-wrap: anywhere; }
+.big { border: 1px solid color-mix(in srgb, var(--v) 28%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--v) 7%, var(--card)), var(--card) 72%); }
+.card { margin-bottom: 14px; }
+.card > b, .big > b { font-size: 15px; letter-spacing: -.02em; }
+.card input, .card select, .fld input, .fld select {
+  min-height: 44px; padding: 10px 12px; border-radius: 12px; border-color: var(--line); background: var(--bg);
+}
+label { font-size: 12px; letter-spacing: .01em; }
+.add, .del {
+  min-height: 45px; padding: 11px 14px; border-radius: 13px; margin-top: 9px;
+  font-size: 13px; transition: transform .15s ease, filter .15s ease;
+}
+.add:active, .del:active, .tabs button:active, .nav button:active { transform: scale(.98); }
+.row {
+  gap: 11px; border: 1px solid var(--line); border-radius: 15px; padding: 13px;
+  margin-bottom: 9px; box-shadow: 0 3px 10px rgba(20,35,45,.025);
+}
+.row b { letter-spacing: -.015em; }
+.row.done { opacity: .62; }
+.chk { width: 25px; height: 25px; border-radius: 9px; }
+.grow small { line-height: 1.45; }
+.amt { letter-spacing: -.02em; }
+.g2 { gap: 9px; }
+.note { font-size: 12px; line-height: 1.55; }
+.warn, .okb, .alert-box { border-radius: 14px; padding: 12px 14px; }
+.wds { gap: 6px; }
+.wds button { border-radius: 10px; padding: 11px 0; }
+.wds button.on { color: #fff; }
+.cal-grid { gap: 5px; }
+.cal-day { min-height: 59px; padding: 5px; border-radius: 10px; }
+.cal-day.hj { border-width: 2px; }
+.cal-day.sel { box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 13%, transparent); }
+.cal-num { font-size: 12px; }
+.cal-badge { border-radius: 5px; }
+.mk { gap: 5px; }
+.mk button, .mk .off { min-height: 48px; border-radius: 10px; }
+.mini button { border-radius: 9px; }
+.bar { height: 9px; border-radius: 10px; }
+.au-card { border-radius: 26px; }
+@media (min-width: 430px) {
+  body { padding-left: 20px; padding-right: 20px; }
+  .tabs { padding-left: 15px; padding-right: 15px; }
+  .tabs button { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+
 </style>
 </head>
 <body>
@@ -217,13 +374,16 @@ textarea { font: inherit; }
 
 <!-- APLICAÇÃO PRINCIPAL -->
 <div id="app-screen" style="display:none;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-    <h1>Planejamento Completo</h1>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
-      <button id="delete-account-btn" class="del" style="width:auto;margin-top:0;font-size:12px;padding:6px 8px;">Excluir conta</button>
-      <button id="logout-btn" style="font-size:12px; padding:6px 10px; border-radius:6px; border:1px solid var(--line); background:var(--card); cursor:pointer;">Sair da Conta</button>
+  <header class="app-header">
+    <div class="app-brand">
+      <span class="app-mark" aria-hidden="true">↗</span>
+      <div><p class="app-eyebrow">SEU DINHEIRO, SOB CONTROLE</p><h1>Planejamento</h1></div>
     </div>
-  </div>
+    <div class="header-actions">
+      <button id="delete-account-btn" class="delete-account-btn" type="button">Excluir conta</button>
+      <button id="logout-btn" class="logout-btn" type="button" aria-label="Sair da conta" title="Sair da conta">↗</button>
+    </div>
+  </header>
   <div class="sync" id="sync"></div>
   <div style="margin-bottom: 10px;"><button class="add" data-a="notif" id="btn-notif" style="margin-top:0;background:var(--card);color:var(--ink);">🔔 Avisar vencimentos quando eu abrir o app</button></div>
   <div class="tabs" id="tabs"></div>
@@ -294,24 +454,18 @@ function fix() {
   }
 }
 
-var CLOUD = { saving: false, again: false, timer: null, retries: 0, maxRetries: 5 };
+var CLOUD = { saving: false, again: false, timer: null };
 function setSync(t) { var el = document.getElementById("sync"); if (el) el.textContent = t; }
 function hora() { return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
-function escapeHTML(value) {
-  return String(value == null ? "" : value).replace(/[&<>"']/g, function(ch) {
-    return { "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[ch];
-  });
-}
 
-function saveLocal() {
-  try { localStorage.setItem(getKey(), JSON.stringify(S)); } catch(e) {}
+function saveLocal() { 
+  try { localStorage.setItem(getKey(), JSON.stringify(S)); } catch(e){} 
 }
 
 function save() {
   S.ts = Date.now();
   saveLocal();
   if (currentUserUid) {
-    CLOUD.retries = 0;
     clearTimeout(CLOUD.timer);
     CLOUD.timer = setTimeout(cloudPush, 600);
     setSync("⏳ Salvando na nuvem…");
@@ -322,61 +476,44 @@ function cloudPush() {
   if (!currentUserUid) return;
   if (CLOUD.saving) { CLOUD.again = true; return; }
   CLOUD.saving = true;
-  var uid = currentUserUid;
   var j = JSON.stringify(S), ts = S.ts || Date.now();
-  db.collection("users").doc(uid).set({ json: j, ts: ts }).then(function(){
+  db.collection("users").doc(currentUserUid).set({ json: j, ts: ts }).then(function(){
     CLOUD.saving = false;
-    CLOUD.retries = 0;
-    if (CLOUD.again) { CLOUD.again = false; cloudPush(); }
-    else if (currentUserUid === uid) setSync("☁️ Sincronizado com a nuvem às " + hora());
+    if (CLOUD.again) { CLOUD.again = false; cloudPush(); } else setSync("☁️ Sincronizado com a nuvem às " + hora());
   }).catch(function(err){
     CLOUD.saving = false;
-    if (currentUserUid !== uid) return;
-    if (CLOUD.retries < CLOUD.maxRetries) {
-      CLOUD.retries++;
-      setSync("⚠️ Falha ao salvar. Nova tentativa " + CLOUD.retries + "/" + CLOUD.maxRetries + "…");
-      clearTimeout(CLOUD.timer);
-      CLOUD.timer = setTimeout(cloudPush, Math.min(30000, 1500 * Math.pow(2, CLOUD.retries - 1)));
-    } else {
-      setSync("⚠️ Não foi possível sincronizar. Seus dados continuam salvos neste dispositivo; verifique a internet e faça uma alteração para tentar novamente.");
-      console.error("Falha ao sincronizar com o Firestore:", err);
-    }
+    setSync("⚠️ Erro ao salvar na nuvem: " + err.message);
   });
 }
 
 function listenCloud(uid) {
   if (unsubscribeSync) unsubscribeSync();
   setSync("⏳ Carregando seus dados…");
+  
   var localData = null;
-  try { localData = localStorage.getItem("plano-v2-" + uid); } catch(e) {}
+  try { localData = localStorage.getItem(getKey()); } catch(e){}
   if (localData) {
-    try { S = JSON.parse(localData); fix(); } catch(e) { S = createEmptyState(); fix(); }
-  } else { S = createEmptyState(); fix(); }
+    try { S = JSON.parse(localData); fix(); } catch(e){}
+  } else {
+    S = createEmptyState(); fix();
+  }
 
   unsubscribeSync = db.collection("users").doc(uid).onSnapshot(function(doc){
-    if (currentUserUid !== uid) return;
     if (doc.exists) {
       var data = doc.data();
       try {
         var rem = JSON.parse(data.json);
-        var localTs = Number(S.ts || 0), remoteTs = Number(data.ts || (rem && rem.ts) || 0);
-        if (rem && localTs > remoteTs) {
-          // Há alterações locais mais recentes: não sobrescrever; enviar para a nuvem.
-          saveLocal();
-          cloudPush();
-        } else if (rem) {
+        if (rem) {
           S = rem; fix(); CC = {}; MC = {}; saveLocal(); draw();
           setSync("☁️ Dados atualizados da nuvem às " + hora());
         }
-      } catch(e) { setSync("⚠️ Não foi possível ler os dados da nuvem."); draw(); }
+      } catch(e){ draw(); }
     } else {
-      // Se já existem dados locais, preservar e enviar; caso contrário, criar dados vazios.
-      saveLocal();
       cloudPush();
       draw();
     }
   }, function(err){
-    setSync("⚠️ Sem acesso à nuvem; usando os dados locais.");
+    setSync("⚠️ Modo offline: usando dados locais");
     draw();
   });
 }
@@ -476,13 +613,13 @@ document.getElementById("logout-btn").addEventListener("click", function(){
   auth.signOut();
 });
 
-// EXCLUSÃO DA CONTA: reautentica, apaga o documento de nuvem do usuário,
-// remove o cache local deste usuário e só então exclui a conta do Firebase Auth.
+// EXCLUSÃO DA CONTA: confirma a identidade, apaga os dados sincronizados e a conta Firebase.
 function deleteAccountError(err) {
   var c = (err && err.code) || "";
   if (c === "auth/wrong-password" || c === "auth/invalid-credential") return "Senha incorreta. Nenhum dado foi excluído.";
   if (c === "auth/requires-recent-login") return "Por segurança, entre novamente na conta e tente excluir de novo.";
   if (c === "auth/popup-closed-by-user" || c === "auth/cancelled-popup-request") return "Exclusão cancelada. Nada foi excluído.";
+  if (c === "auth/missing-password") return "Digite sua senha para continuar. Nenhum dado foi excluído.";
   return "Não foi possível concluir a exclusão: " + ((err && err.message) || c || "erro desconhecido");
 }
 
@@ -496,8 +633,7 @@ function reauthenticateForDeletion(user) {
     return user.reauthenticateWithCredential(cred);
   }
   if (providers.indexOf("google.com") >= 0) {
-    var provider = new firebase.auth.GoogleAuthProvider();
-    return user.reauthenticateWithPopup(provider);
+    return user.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
   }
   return Promise.reject({code:"auth/requires-recent-login", message:"Entre novamente para confirmar sua identidade."});
 }
@@ -508,8 +644,7 @@ document.getElementById("delete-account-btn").addEventListener("click", function
     alert("Entre na sua conta antes de solicitar a exclusão.");
     return;
   }
-  var ok = window.confirm("Excluir sua conta permanentemente? Seus dados financeiros sincronizados desta conta também serão apagados. Esta ação não pode ser desfeita.");
-  if (!ok) return;
+  if (!window.confirm("Excluir sua conta permanentemente? Os dados financeiros sincronizados desta conta também serão apagados. Esta ação não pode ser desfeita.")) return;
   var typed = window.prompt('Para confirmar, digite EXCLUIR (em letras maiúsculas):');
   if (typed !== "EXCLUIR") {
     alert("Exclusão cancelada. Nenhum dado foi apagado.");
@@ -523,20 +658,18 @@ document.getElementById("delete-account-btn").addEventListener("click", function
   var uid = user.uid;
   reauthenticateForDeletion(user).then(function(){
     if (CLOUD.timer) clearTimeout(CLOUD.timer);
-    CLOUD.retries = 0; CLOUD.again = false;
+    CLOUD.again = false;
     if (unsubscribeSync) { unsubscribeSync(); unsubscribeSync = null; }
-    CLOUD.saving = false; CLOUD.again = false;
+    CLOUD.saving = false;
     setSync("🗑️ Removendo seus dados…");
     return db.collection("users").doc(uid).delete();
   }).then(function(){
-    // Apaga somente o cache associado a este UID; não mexe nos dados de outros usuários.
     try { localStorage.removeItem("plano-v2-" + uid); } catch(e) {}
     return user.delete();
   }).then(function(){
     currentUserUid = null;
     S = createEmptyState();
     alert("Sua conta e os dados financeiros sincronizados foram excluídos.");
-    // O listener de autenticação leva o app de volta à tela de login.
   }).catch(function(err){
     btn.disabled = false;
     btn.textContent = "Excluir conta";
@@ -581,7 +714,7 @@ function wdOn(d) {
 function F(n) { return (n || 0).toFixed(2).replace(".",",").replace(/,00$/,""); }
 function R(n) { return "R$ " + F(n); }
 function inp(sc, id, f, v, ty) {
-  return '<input data-s="'+sc+'" data-i="'+id+'" data-f="'+f+'" type="'+ty+'" value="'+escapeHTML(v)+'"'+(ty=="number"?' step="0.01" inputmode="decimal"':'')+'>';
+  return '<input data-s="'+sc+'" data-i="'+id+'" data-f="'+f+'" type="'+ty+'" value="'+String(v).replace(/"/g,"&quot;")+'"'+(ty=="number"?' step="0.01" inputmode="decimal"':'')+'>';
 }
 
 var CC = {}, MC = {};
@@ -936,7 +1069,7 @@ function vMes() {
     ban += '<div class="okb">✅ <b>O pote cobre tudo.</b> Todos os vencimentos do mês estão garantidos só com o que você separa, sem tirar nada da sobra. No fim do mês ficam <b>' + R(c.endMim) + '</b> livres pra você' + (c.endPote > 0.005 ? ' e ' + R(c.endPote) + ' de folga no pote pro mês que vem' : '') + '.</div>';
   }
   var nx = (c.bl || []).filter(function(q){ return !S.paid[S.ym + q.id] && (!isCurrentMonth || q.d >= td.getDate()); })[0];
-  if (nx) ban += '<div class="note" style="margin-top:-4px">Próximo vencimento: <b>' + escapeHTML(nx.n) + '</b> · dia ' + nx.d + ' · ' + R(nx.a) + ' · o pote terá ' + R(nx.before) + '</div>';
+  if (nx) ban += '<div class="note" style="margin-top:-4px">Próximo vencimento: <b>' + nx.n + '</b> · dia ' + nx.d + ' · ' + R(nx.a) + ' · o pote terá ' + R(nx.before) + '</div>';
   var spend = "";
   if (isCurrentMonth) {
     try {
@@ -1098,7 +1231,7 @@ function vMarcar() {
   c.L.filter(function(b){ return b.t === "dd"; }).forEach(function(b){
     var t2 = 0, o2 = 0;
     for (var q2 = 1; q2 <= c.N; q2++) if (b.on[q2]) { t2++; if (S.paid[S.ym + b.id + "d" + q2]) o2++; }
-    h += '<div class="note"><b>' + escapeHTML(b.n) + ' (Diária)</b> · ' + R(b.a) + ' por dia · ' + o2 + ' de ' + t2 + '<br>Toque nos dias em que você pagou/gastou.</div>';
+    h += '<div class="note"><b>' + b.n + ' (Diária)</b> · ' + R(b.a) + ' por dia · ' + o2 + ' de ' + t2 + '<br>Toque nos dias em que você pagou/gastou.</div>';
     h += mkGrid(c, b.id + "d", function(q){ return !!b.on[q]; });
   });
 
@@ -1118,7 +1251,7 @@ function vMarcar() {
     var dn = o.d == 99 ? "" : WN[new Date(c.Y, c.M - 1, o.d).getDay()] + " " + o.d + " · ", done = S.paid[S.ym + o.id];
     h += '<button class="row sm' + (done ? " done" : "") + '" data-a="tog" data-i="' + o.id + '">' +
          '<span class="chk">' + (done ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>' + escapeHTML(o.n) + '</b><small>' + (o.s || dn + (o.x ? "cai na conta" : "pagar")) + '</small></span>' +
+         '<span class="grow"><b>' + o.n + '</b><small>' + (o.s || dn + (o.x ? "cai na conta" : "pagar")) + '</small></span>' +
          '<span class="amt' + (o.x ? " in" : "") + '">' + (o.x ? "+" : "") + R(o.a) + '</span></button>';
   });
   return h + '<p class="note">Toque numa conta pra marcar como paga. O mês seguinte começa limpo.</p>';
@@ -1320,7 +1453,7 @@ function vCalendario() {
     h += '<div class="cal-dots">';
     if (isWk) h += '<span class="cal-badge wk">Diária</span>';
     dayEv.forEach(function(e){
-      h += '<span class="cal-badge ' + (e.in ? 'in' : 'out') + '">' + escapeHTML(e.n) + '</span>';
+      h += '<span class="cal-badge ' + (e.in ? 'in' : 'out') + '">' + e.n + '</span>';
     });
     h += '</div></div>';
   }
@@ -1355,11 +1488,11 @@ function vCalendario() {
       if (itemId) {
         h += '<button class="row' + (done ? " done" : "") + '" data-a="tog" data-i="' + itemId + '" style="margin-top:6px;">' +
              '<span class="chk">' + (done ? "✓" : "") + '</span>' +
-             '<span class="grow"><b>' + escapeHTML(e.n) + '</b><small>' + (e.in ? "Renda caindo na conta" : "Conta a pagar") + '</small></span>' +
+             '<span class="grow"><b>' + e.n + '</b><small>' + (e.in ? "Renda caindo na conta" : "Conta a pagar") + '</small></span>' +
              '<span class="amt' + (e.in ? " in" : "") + '">' + (e.in ? "+" : "") + R(e.a) + '</span>' +
              '</button>';
       } else {
-        h += '<div class="row" style="margin-top:6px;"><span class="grow"><b>' + escapeHTML(e.n) + '</b></span><span class="amt' + (e.in ? " in" : "") + '">' + R(e.a) + '</span></div>';
+        h += '<div class="row" style="margin-top:6px;"><span class="grow"><b>' + e.n + '</b></span><span class="amt' + (e.in ? " in" : "") + '">' + R(e.a) + '</span></div>';
       }
     });
   }
