@@ -262,7 +262,6 @@ function listenCloud(uid) {
   if (unsubscribeSync) unsubscribeSync();
   setSync("⏳ Carregando seus dados…");
   
-  // Tenta carregar do localStorage do usuário primeiro
   var localData = null;
   try { localData = localStorage.getItem(getKey()); } catch(e){}
   if (localData) {
@@ -282,7 +281,6 @@ function listenCloud(uid) {
         }
       } catch(e){ draw(); }
     } else {
-      // Usuário novo! Não existe no Firestore -> Salvar o estado zerado dele
       cloudPush();
       draw();
     }
@@ -362,7 +360,10 @@ function billPlan(b, ym, dias, tmd) {
     nk = Math.floor((q - 1 + fdw) / 7);
     if (b.t === "s") per[q] = custom ? b.a / (wkc[nk] || 1) : b.a / (sel.length || 1);
     else per[q] = b.a;
-    if (b.t === "s" && tmd && q < tmd) continue;
+    
+    // Ignorar dias que já passaram no mês atual para contas semanais ou diárias
+    if (tmd && q < tmd && (b.t === "s" || b.t === "dd")) continue;
+    
     live[q] = true; cnt++; tw += per[q]; wl[nk] = 1;
   }
   return { on: on, live: live, per: per, sel: sel, custom: custom, cnt: cnt, tw: tw, wl: Object.keys(wl).length };
@@ -913,7 +914,7 @@ function billDaysUI(b) {
   o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Dia do vencimento no mês:" : "Ou marque os dias exatos de " + mNome(S.ym)) + '</label><div class="mini">';
   WN.forEach(function(w){ o += '<span class="mh">' + w + '</span>'; });
   for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
-  for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + (isS && tmd && q < tmd ? " pass" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
+  for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + ((isS || b.t === "dd") && tmd && q < tmd ? " pass" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
   o += '</div>';
 
   if (isS) {
