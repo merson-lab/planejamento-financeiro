@@ -103,7 +103,7 @@ label { font-size: 13px; color: var(--mut); font-weight: 700; }
 .rt small, .rt b { display: block; }
 .row input { width: 96px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
 
-/* Calendário e Mini-Calendários */
+/* Calendário */
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
 .cal-head { text-align: center; font-size: 12px; font-weight: 700; color: var(--mut); padding: 4px 0; }
 .cal-day { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 4px; min-height: 58px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; text-align: left; position: relative; width: 100%; }
@@ -182,23 +182,27 @@ var currentUserUid = null;
 var unsubscribeSync = null;
 
 // ==========================================
-// LÓGICA DO APLICATIVO
+// ESTADO E UTILITÁRIOS
 // ==========================================
-var LASTAV = [], KEY = "plano-v2",
+var LASTAV = [],
     MS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],
     WN = ["dom","seg","ter","qua","qui","sex","sáb"],
     tab = 1, selDay = 0,
     currentYM = new Date().getFullYear() + "-" + ("0" + (new Date().getMonth() + 1)).slice(-2),
-    S = {
-      ym: currentYM, tipoRenda: "diaria", dia: 0, dias: [1,2,3,4,5],
-      valQuinzena: 0, diaQ1: 5, diaQ2: 20, valMes: 0, diaMes: 5,
-      ini: {}, paid: {}, gp: {}, rp: {}, carry: false, ex: [], bills: []
-    };
+    S = createEmptyState();
 
-try {
-  var r = localStorage.getItem(KEY);
-  if (r) S = JSON.parse(r);
-} catch(e){}
+function createEmptyState() {
+  return {
+    ym: currentYM, tipoRenda: "diaria", dia: 0, dias: [1,2,3,4,5],
+    valQuinzena: 0, diaQ1: 5, diaQ2: 20, valMes: 0, diaMes: 5,
+    ini: {}, paid: {}, gp: {}, rp: {}, carry: false, ex: [], bills: [],
+    start: currentYM, ts: Date.now()
+  };
+}
+
+function getKey() {
+  return currentUserUid ? ("plano-v2-" + currentUserUid) : "plano-v2-guest";
+}
 
 function fix() {
   S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {};
@@ -221,12 +225,14 @@ function fix() {
     S.start = ms.length ? ms.sort()[0] : S.ym;
   }
 }
-fix();
 
 var CLOUD = { saving: false, again: false, timer: null };
 function setSync(t) { var el = document.getElementById("sync"); if (el) el.textContent = t; }
 function hora() { return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
-function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+
+function saveLocal() { 
+  try { localStorage.setItem(getKey(), JSON.stringify(S)); } catch(e){} 
+}
 
 function save() {
   S.ts = Date.now();
@@ -254,26 +260,35 @@ function cloudPush() {
 
 function listenCloud(uid) {
   if (unsubscribeSync) unsubscribeSync();
-  setSync("⏳ Carregando dados da nuvem…");
+  setSync("⏳ Carregando seus dados…");
   
+  // Tenta carregar do localStorage do usuário primeiro
+  var localData = null;
+  try { localData = localStorage.getItem(getKey()); } catch(e){}
+  if (localData) {
+    try { S = JSON.parse(localData); fix(); } catch(e){}
+  } else {
+    S = createEmptyState(); fix();
+  }
+
   unsubscribeSync = db.collection("users").doc(uid).onSnapshot(function(doc){
     if (doc.exists) {
       var data = doc.data();
       try {
         var rem = JSON.parse(data.json);
-        if (rem && (rem.ts || 0) > (S.ts || 0)) {
-          S = rem; fix(); START = S.start; CC = {}; MC = {}; saveLocal(); draw();
-          setSync("☁️ Atualizado da nuvem às " + hora());
-        } else if ((S.ts || 0) === 0) {
-          S = rem; fix(); START = S.start; CC = {}; MC = {}; saveLocal(); draw();
-          setSync("☁️ Dados carregados com sucesso");
+        if (rem) {
+          S = rem; fix(); CC = {}; MC = {}; saveLocal(); draw();
+          setSync("☁️ Dados atualizados da nuvem às " + hora());
         }
-      } catch(e){}
+      } catch(e){ draw(); }
     } else {
+      // Usuário novo! Não existe no Firestore -> Salvar o estado zerado dele
       cloudPush();
+      draw();
     }
   }, function(err){
     setSync("⚠️ Modo offline: usando dados locais");
+    draw();
   });
 }
 
@@ -283,10 +298,10 @@ auth.onAuthStateChanged(function(user) {
     document.getElementById("auth-screen").style.display = "none";
     document.getElementById("app-screen").style.display = "block";
     listenCloud(user.uid);
-    draw();
   } else {
     currentUserUid = null;
     if (unsubscribeSync) { unsubscribeSync(); unsubscribeSync = null; }
+    S = createEmptyState();
     document.getElementById("auth-screen").style.display = "block";
     document.getElementById("app-screen").style.display = "none";
   }
@@ -368,7 +383,6 @@ function inp(sc, id, f, v, ty) {
   return '<input data-s="'+sc+'" data-i="'+id+'" data-f="'+f+'" type="'+ty+'" value="'+String(v).replace(/"/g,"&quot;")+'"'+(ty=="number"?' step="0.01" inputmode="decimal"':'')+'>';
 }
 
-var START = S.start;
 var CC = {}, MC = {};
 function ymKeys(o) { return Object.keys(o || {}).sort(); }
 function ic(f) {
@@ -391,12 +405,12 @@ function prevYM(ym) {
   return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
 }
 function carry(ym) {
-  if (ym <= START) return { p: 0, m: 0 };
+  if (ym <= S.start) return { p: 0, m: 0 };
   if (CC[ym]) return CC[ym];
   var o = S.ym; S.ym = prevYM(ym);
   var s = serie(), l = s[s.length-1];
   S.ym = o;
-  return (CC[ym] = { p: l.pote, m: l.mim });
+  return (CC[ym] = { p: l ? l.pote : 0, m: l ? l.mim : 0 });
 }
 
 function XS() { return S.ex.filter(function(x){ return act(x, S.ym); }).map(function(x){ return eff(x, S.ym); }); }
@@ -417,7 +431,7 @@ function calc() {
       ex = X.reduce(function(s, x){ return s + x.a; }, 0),
       wk = dias.length || 1, tot = 0, ud = 0, wc = [];
   
-  for (d = 1; d <= N; d++) { wc[d] = 0; } // Removido o dc (deduções diárias agora vão direto pra bD)
+  for (d = 1; d <= N; d++) { wc[d] = 0; }
   var tnw = new Date(), tmd = (tnw.getFullYear() == Y && tnw.getMonth() + 1 == M) ? tnw.getDate() : 0;
   
   var exD = [], bD = [];
@@ -429,7 +443,7 @@ function calc() {
     
     if (b.t == "dd") { 
       for (q = 1; q <= N; q++) {
-        if (pl.live[q]) bD[q].push({ id: b.id + "d" + q, n: b.n, a: b.a, t: "dd" }); // Injeta cada diária como se fosse uma conta no dia!
+        if (pl.live[q]) bD[q].push({ id: b.id + "d" + q, n: b.n, a: b.a, t: "dd" });
       }
       b.tt = pl.tw; tot += b.tt;
     }
@@ -624,7 +638,7 @@ function RS(c) {
 }
 
 function mao(ym) {
-  if (ym <= START) return 0;
+  if (ym <= S.start) return 0;
   if (MC[ym] !== undefined) return MC[ym];
   var pv = prevYM(ym), o = S.ym; S.ym = pv;
   var r = RS(calc()), v = mao(pv) + r.en - r.pg;
@@ -1186,7 +1200,7 @@ document.addEventListener("click", function(e){
     var bt2 = document.getElementById("bk"), nS = null;
     try { nS = JSON.parse(bt2 ? bt2.value : ""); } catch(e3){}
     if (!nS || !nS.bills || !nS.ym) { alert("Cole primeiro o texto do backup na caixa."); return; }
-    S = nS; fix(); START = S.start; save();
+    S = nS; fix(); S.start = S.start || S.ym; save();
   }
   else if (a == "wkd") {
     S.dw = S.dw || {};
