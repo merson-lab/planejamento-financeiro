@@ -357,6 +357,10 @@ function billPlan(b, ym, dias, tmd) {
     }
   }
 
+  var cut = 0;
+  if (b.t !== "m" && b.si) { var sm = b.si.slice(0, 7); if (sm === ym) cut = +b.si.slice(8, 10) || 0; else if (sm > ym) cut = N + 1; }
+  if (b.t === "dd") { for (q = 1; q < cut && q <= N; q++) on[q] = false; cut = 0; }
+
   // Aplica o override manual do usuário (bdiário ou bsemanal desmarcado/marcado)
   var bdw = S.bdw || {};
   for (q = 1; q <= N; q++) {
@@ -365,8 +369,6 @@ function billPlan(b, ym, dias, tmd) {
     else if (ov === "y") on[q] = true;
   }
   
-  var cut = 0;
-  if (b.t !== "m" && b.si) { var sm = b.si.slice(0, 7); if (sm === ym) cut = +b.si.slice(8, 10) || 0; else if (sm > ym) cut = N + 1; }
   for (q = 1; q < cut && q <= N; q++) on[q] = false;
 
   for (q = 1; q <= N; q++) if (on[q]) { nk = Math.floor((q - 1 + fdw) / 7); wkc[nk] = (wkc[nk] || 0) + 1; }
@@ -918,18 +920,18 @@ function billDaysUI(b) {
       pl = billPlan(b, S.ym, ic("dias"), 0), N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
       isS = b.t === "s", nn = pl.sel.length || 1, q, o = '';
   
-  if (b.t !== "m") o += '<div style="margin-top:10px"><label>Conta vale a partir de</label>' + inp("b", b.id, "si", b.si || "", "date") + '<div class="note" style="margin:4px 0 0">Dias antes dessa data não contam (ficam apagados no calendário).</div></div>';
+  if (b.t === "s") o += '<div style="margin-top:10px"><label>Conta vale a partir de</label>' + inp("b", b.id, "si", b.si || "", "date") + '<div class="note" style="margin:4px 0 0">Dias antes dessa data não contam (ficam apagados no calendário).</div></div>';
   if (b.t === "s") {
     o += '<label style="display:block;margin-top:10px">Dias da semana previstos</label><div class="wds">' +
          [1,2,3,4,5,6,0].map(function(i){ return '<button class="' + (!pl.custom && pl.sel.indexOf(i) >= 0 ? "on" : "") + '" data-a="bwd" data-i="' + b.id + '" data-w="' + i + '">' + WN[i] + '</button>'; }).join("") + '</div>';
   }
   
-  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Dia do vencimento no mês:" : b.t === "dd" ? "Toque em qualquer dia do mês para marcar/desmarcar:" : "Toque nos dias abaixo para marcar/desmarcar:") + '</label><div class="mini">';
+  o += '<label style="display:block;margin-top:12px">' + (b.t === "m" ? "Dia do vencimento no mês:" : b.t === "dd" ? "Toque em qualquer dia do mês (livre) para marcar/desmarcar:" : "Toque nos dias abaixo para marcar/desmarcar:") + '</label><div class="mini">';
   WN.forEach(function(w){ o += '<span class="mh">' + w + '</span>'; });
   for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
   for (q = 1; q <= N; q++) if (b.t !== "m" && pl.cut && q < pl.cut) o += '<button class="pass" disabled>' + q + '</button>'; else o += '<button class="' + (pl.on[q] ? "on" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
   o += '</div>';
-  if (b.t === "dd") o += '<div style="display:flex;gap:8px;margin-top:8px"><button class="add" style="flex:1;margin:0" data-a="bdall" data-i="' + b.id + '" data-m="all">Marcar todos daqui pra frente</button><button class="add" style="flex:1;margin:0" data-a="bdall" data-i="' + b.id + '" data-m="none">Limpar dias</button></div>';
+  if (b.t === "dd") o += '<div style="display:flex;gap:8px;margin-top:8px"><button class="add" style="flex:1;margin:0" data-a="bdall" data-i="' + b.id + '" data-m="all">Marcar o mês todo</button><button class="add" style="flex:1;margin:0" data-a="bdall" data-i="' + b.id + '" data-m="none">Limpar dias</button></div>';
 
   if (isS) {
     o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados.'
