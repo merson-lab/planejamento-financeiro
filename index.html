@@ -227,6 +227,11 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 @keyframes shine{0%{transform:skewX(-20deg) translateX(0)}55%,100%{transform:skewX(-20deg) translateX(450%)}}
 .au-main:active{transform:scale(.98)}
 @media(prefers-reduced-motion:reduce){.au-bg *,.au-card,.au-card>*,.au-card::before,.au-logo,.au-main,.au-main::after{animation:none!important}.au-bars i{transform:scaleY(.5)}.au-chart .line{stroke-dashoffset:0}.au-chart .fill{opacity:1}}
+.bk-list{max-height:46vh;overflow:auto;margin-top:10px}
+.bk-item{display:flex;flex-direction:column;gap:8px;padding:12px;margin-bottom:8px;border:1px solid var(--line);border-radius:18px;background:var(--card2)}
+.bk-item b{font-size:14px}.bk-item small{display:block;color:var(--mut);font-size:11px;margin-top:1px}
+.bk-btns{display:flex;gap:6px}.bk-btns button{flex:1;padding:9px 0;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:12px}
+.bk-btns button[data-bk=rest]{background:linear-gradient(135deg,var(--v),var(--c));color:var(--onc);border-color:transparent}
 html.lite .blob,html.lite .au-grid,html.lite .coin,html.lite .au-card::before,html.lite .au-main,html.lite .au-main::after,html.lite .au-logo{animation:none!important}
 html.lite .au-bars i{animation-duration:9s}
 @supports not (color:color-mix(in srgb,red,blue)){
@@ -351,6 +356,12 @@ body{background:var(--bg)}
       <div class="settings-row"><p>Conta conectada</p><b id="settings-account" style="font-size:12px;overflow-wrap:anywhere;text-align:right"></b></div>
     </section>
     <section class="settings-section">
+      <h3>🛟 Backups automáticos</h3><p class="settings-help">A cada alteração o app guarda uma cópia na nuvem (no máximo uma a cada 10 minutos). Ficam todas as das últimas 48 horas e uma por dia até 45 dias. Você pode restaurar, baixar ou copiar qualquer uma.</p>
+      <div class="settings-row"><button class="settings-action" id="bk-load" type="button">Ver meus backups</button><button class="settings-action" id="bk-now" type="button">Criar agora</button></div>
+      <div class="settings-status" id="bk-status" aria-live="polite"></div>
+      <div class="bk-list" id="bk-list"></div>
+    </section>
+    <section class="settings-section">
       <h3>🗑️ Excluir conta</h3><p class="settings-help">A exclusão remove o cadastro de autenticação e os dados financeiros associados no banco deste aplicativo. É irreversível. O Firebase pode exigir que você entre novamente antes de concluir.</p>
       <button class="settings-action settings-danger" id="settings-delete" type="button">Excluir minha conta e meus dados</button>
       <div class="settings-status" id="settings-status" aria-live="polite"></div>
@@ -461,7 +472,7 @@ function cloudPush() {
   CLOUD.saving = true;
   var j = JSON.stringify(S), ts = S.ts || Date.now();
   db.collection("users").doc(currentUserUid).set({ json: j, ts: ts }).then(function(){
-    CLOUD.saving = false; setLastSync(ts);
+    CLOUD.saving = false; setLastSync(ts); bkAgendar();
     if (CLOUD.again) { CLOUD.again = false; cloudPush(); } else setSync("☁️ Sincronizado com a nuvem às " + hora() + contaTxt());
   }).catch(function(err){
     CLOUD.saving = false;
@@ -637,7 +648,7 @@ function deleteCurrentAccount(){
   // Reautentica antes de apagar qualquer dado, para não deixar a conta ativa sem seus registros.
   reauthenticateIfNeeded().then(function(){
     status.textContent="Excluindo dados financeiros…";
-    return db.collection("users").doc(user.uid).delete();
+    return bkApagarTudo(user.uid).then(function(){ return db.collection("users").doc(user.uid).delete(); });
   }).then(function(){ return user.delete(); }).then(function(){
     try{localStorage.removeItem("plano-v2-"+user.uid);localStorage.removeItem("plano-palette-"+user.uid);}catch(e){}
     status.textContent="Conta excluída.";
@@ -702,6 +713,133 @@ function renderDashboardCharts(c, rs) {
   });
 }
 
+
+// ==========================================
+// BACKUPS AUTOMÁTICOS (subcoleções users/{uid}/backups e backupdata)
+// ==========================================
+var BK = { last: 0, timer: null, MIN: 10 * 60 * 1000 };
+function bkMeta() { return db.collection("users").doc(currentUserUid).collection("backups"); }
+function bkData() { return db.collection("users").doc(currentUserUid).collection("backupdata"); }
+function bkStatus(t) { var el = document.getElementById("bk-status"); if (el) el.textContent = t || ""; }
+function bkPad(n) { return ("0" + n).slice(-2); }
+function bkQuando(ts) { var d = new Date(ts); return bkPad(d.getDate()) + "/" + bkPad(d.getMonth() + 1) + " " + bkPad(d.getHours()) + ":" + bkPad(d.getMinutes()); }
+function bkRotulo(ts, agora) {
+  var m = Math.round(((agora || Date.now()) - ts) / 60000);
+  if (m < 1) return "agora há pouco";
+  if (m < 60) return "há " + m + " min";
+  var h = Math.round(m / 60);
+  if (h < 24) return "há " + h + (h === 1 ? " hora" : " horas");
+  var d = Math.round(h / 24);
+  return d === 1 ? "há 1 dia" : "há " + d + " dias";
+}
+function bkCriar(motivo) {
+  if (!currentUserUid) return Promise.resolve(false);
+  if (!CLOUD.ready) { bkStatus("⚠️ Sem conexão com a nuvem agora. Tente de novo em instantes."); return Promise.resolve(false); }
+  var ts = Date.now(), id = String(ts), j = JSON.stringify(S);
+  if (j.length > 900000) { bkStatus("⚠️ Os dados estão grandes demais para backup na nuvem."); return Promise.resolve(false); }
+  var b = db.batch();
+  b.set(bkData().doc(id), { json: j });
+  b.set(bkMeta().doc(id), { ts: ts, size: j.length, motivo: motivo || "auto", ym: S.ym });
+  return b.commit().then(function(){ BK.last = ts; return true; }).catch(function(e){
+    bkStatus("⚠️ Não consegui criar o backup (" + (e.code || e.message) + "). Confira se as regras do Firestore foram atualizadas.");
+    return false;
+  });
+}
+function bkAgendar() {
+  if (!currentUserUid) return;
+  clearTimeout(BK.timer);
+  BK.timer = setTimeout(function(){ bkCriar("auto").then(function(){ bkLimpeza(); }); }, Math.max(0, BK.last + BK.MIN - Date.now()));
+}
+function bkApagarRefs(refs) {
+  var p = Promise.resolve();
+  for (var i = 0; i < refs.length; i += 400) (function(part){
+    p = p.then(function(){ var b = db.batch(); part.forEach(function(r){ b.delete(r); }); return b.commit(); });
+  })(refs.slice(i, i + 400));
+  return p;
+}
+function bkLimpeza() {
+  if (!currentUserUid) return;
+  var k = "plano-bk-limpeza-" + currentUserUid, hoje = new Date().toISOString().slice(0, 10);
+  try { if (localStorage.getItem(k) === hoje) return; localStorage.setItem(k, hoje); } catch(e) {}
+  bkMeta().where("ts", "<", Date.now() - 48 * 3600 * 1000).orderBy("ts", "desc").get().then(function(q){
+    var agora = Date.now(), dias = {}, refs = [];
+    q.forEach(function(d){
+      var t = +d.id || 0, dt = new Date(t), dia = dt.getFullYear() + "-" + dt.getMonth() + "-" + dt.getDate();
+      if (agora - t > 45 * 86400000 || dias[dia]) { refs.push(d.ref); refs.push(bkData().doc(d.id)); } else dias[dia] = true;
+    });
+    return bkApagarRefs(refs);
+  }).catch(function(){});
+}
+function bkApagarTudo(uid) {
+  var base = db.collection("users").doc(uid);
+  return base.collection("backups").get().then(function(q){
+    var refs = []; q.forEach(function(d){ refs.push(d.ref); refs.push(base.collection("backupdata").doc(d.id)); });
+    return bkApagarRefs(refs);
+  });
+}
+function bkAfinar(lista, agora) {
+  var vistos = {}, out = [];
+  lista.forEach(function(x){
+    var idade = agora - x.ts, d = new Date(x.ts),
+        chave = idade < 2 * 3600000 ? "m" + x.ts : (idade < 48 * 3600000 ? "h" + Math.floor(x.ts / 3600000) : "d" + d.getFullYear() + d.getMonth() + d.getDate());
+    if (!vistos[chave]) { vistos[chave] = 1; out.push(x); }
+  });
+  return out;
+}
+function bkListar() {
+  if (!currentUserUid) return;
+  bkStatus("⏳ Carregando backups…");
+  bkMeta().orderBy("ts", "desc").limit(300).get().then(function(q){
+    var lista = []; q.forEach(function(d){ var x = d.data(); lista.push({ id: d.id, ts: +x.ts || +d.id, size: x.size || 0, motivo: x.motivo || "auto" }); });
+    var agora = Date.now(), v = bkAfinar(lista, agora), h = "";
+    v.forEach(function(x){
+      h += '<div class="bk-item"><div><b>' + bkRotulo(x.ts, agora) + '</b><small>' + bkQuando(x.ts) + ' · ' + Math.max(1, Math.round(x.size / 1024)) + ' KB · ' +
+        (x.motivo === "manual" ? "manual" : x.motivo === "antes-restaurar" ? "antes de restaurar" : "automático") + '</small></div>' +
+        '<div class="bk-btns"><button type="button" data-bk="rest" data-id="' + x.id + '">Restaurar</button><button type="button" data-bk="dl" data-id="' + x.id + '">Baixar</button><button type="button" data-bk="cp" data-id="' + x.id + '">Copiar</button></div></div>';
+    });
+    document.getElementById("bk-list").innerHTML = h;
+    bkStatus(v.length ? "Mostrando " + v.length + " backups (os mais recentes primeiro)." : "Ainda não há backups. Eles aparecem depois da próxima alteração.");
+  }).catch(function(e){ bkStatus("⚠️ Não consegui carregar os backups (" + (e.code || e.message) + "). Confira se as regras do Firestore foram atualizadas."); });
+}
+function bkBaixarTexto(nome, texto) {
+  try {
+    var url = URL.createObjectURL(new Blob([texto], { type: "application/json" })), a = document.createElement("a");
+    a.href = url; a.download = nome; document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+    return true;
+  } catch(e) { return false; }
+}
+function bkCopiarFallback(t) {
+  try { var ta = document.createElement("textarea"); ta.value = t; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); var ok = document.execCommand("copy"); document.body.removeChild(ta); return ok; } catch(e) { return false; }
+}
+function bkCopiarTexto(t) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(function(){ return true; }, function(){ return bkCopiarFallback(t); });
+  return Promise.resolve(bkCopiarFallback(t));
+}
+function bkAcao(acao, id) {
+  bkStatus("⏳ Buscando o backup…");
+  bkData().doc(id).get().then(function(d){
+    if (!d.exists) throw new Error("backup não encontrado");
+    var texto = d.data().json, ts = +id, nome = "planejamento-backup-" + new Date(ts).getFullYear() + bkPad(new Date(ts).getMonth() + 1) + bkPad(new Date(ts).getDate()) + "-" + bkPad(new Date(ts).getHours()) + bkPad(new Date(ts).getMinutes()) + ".json";
+    if (acao === "dl") { bkStatus(bkBaixarTexto(nome, texto) ? "✅ Arquivo gerado. Se o download não começar (alguns APKs bloqueiam), use \"Copiar\"." : "⚠️ Não foi possível baixar aqui. Use \"Copiar\"."); return; }
+    if (acao === "cp") { return bkCopiarTexto(texto).then(function(ok){ bkStatus(ok ? "✅ Backup copiado. Cole em um bloco de notas ou mensagem para guardar." : "⚠️ Não consegui copiar neste aparelho."); }); }
+    var nS = JSON.parse(texto);
+    if (!nS || !nS.bills || !nS.ym) throw new Error("backup inválido");
+    if (!confirm("Restaurar o backup de " + bkQuando(ts) + " (" + bkRotulo(ts) + ")?\n\nOs dados atuais serão substituídos. Antes disso o app guarda um backup dos dados de agora.")) { bkStatus(""); return; }
+    return bkCriar("antes-restaurar").then(function(ok){
+      if (!ok && !confirm("Não consegui guardar um backup dos dados atuais. Restaurar mesmo assim?")) return;
+      S = nS; S.ym = currentYM; fix(); S.start = S.start || S.ym; CC = {}; MC = {};
+      save(); closeSettings(); draw();
+      alert("Backup restaurado.");
+    });
+  }).catch(function(e){ bkStatus("⚠️ " + (e.code || e.message)); });
+}
+(function(){
+  var l = document.getElementById("bk-load"), n = document.getElementById("bk-now"), lst = document.getElementById("bk-list");
+  if (l) l.addEventListener("click", bkListar);
+  if (n) n.addEventListener("click", function(){ bkStatus("⏳ Criando backup…"); bkCriar("manual").then(function(ok){ if (ok) { bkStatus("✅ Backup criado às " + hora()); bkListar(); } }); });
+  if (lst) lst.addEventListener("click", function(e){ var b = e.target.closest && e.target.closest("button[data-bk]"); if (b) bkAcao(b.getAttribute("data-bk"), b.getAttribute("data-id")); });
+})();
 
 auth.onAuthStateChanged(function(user) {
   if (user) {
