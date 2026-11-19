@@ -422,7 +422,8 @@ function fix() {
   }
 }
 
-var CLOUD = { saving: false, again: false, timer: null };
+var CLOUD = { saving: false, again: false, timer: null, ready: false, retry: null };
+function contaTxt() { var u = null; try { u = auth.currentUser; } catch(e) {} return u && u.email ? " · " + u.email : ""; }
 function lsKey() { return "plano-lastsync-" + (currentUserUid || "guest"); }
 function getLastSync() { try { return +localStorage.getItem(lsKey()) || 0; } catch(e) { return 0; } }
 function setLastSync(t) { try { localStorage.setItem(lsKey(), String(t)); } catch(e) {} }
@@ -454,12 +455,14 @@ function save() {
 
 function cloudPush() {
   if (!currentUserUid) return;
+  // Só grava na nuvem depois de conseguir LER a nuvem: assim um começo sem internet nunca sobrescreve seus dados.
+  if (!CLOUD.ready) { setSync("⚠️ Sem conexão com a nuvem. Suas alterações ficam só neste aparelho até a conexão voltar."); return; }
   if (CLOUD.saving) { CLOUD.again = true; return; }
   CLOUD.saving = true;
   var j = JSON.stringify(S), ts = S.ts || Date.now();
   db.collection("users").doc(currentUserUid).set({ json: j, ts: ts }).then(function(){
     CLOUD.saving = false; setLastSync(ts);
-    if (CLOUD.again) { CLOUD.again = false; cloudPush(); } else setSync("☁️ Sincronizado com a nuvem às " + hora());
+    if (CLOUD.again) { CLOUD.again = false; cloudPush(); } else setSync("☁️ Sincronizado com a nuvem às " + hora() + contaTxt());
   }).catch(function(err){
     CLOUD.saving = false;
     setSync("⚠️ Erro ao salvar na nuvem: " + err.message);
@@ -478,7 +481,9 @@ function listenCloud(uid) {
     S = createEmptyState(); fix();
   }
 
+  CLOUD.ready = false; clearTimeout(CLOUD.retry);
   unsubscribeSync = db.collection("users").doc(uid).onSnapshot(function(doc){
+    CLOUD.ready = true;
     if (doc.exists) {
       var data = doc.data();
       try {
@@ -495,7 +500,7 @@ function listenCloud(uid) {
         }
         if (rem && (!hasLocalState || remoteTs >= (+S.ts || localTs))) {
           S = rem; S.ym = ymView || currentYM; fix(); CC = {}; MC = {}; saveLocal(); setLastSync(remoteTs); draw(); hasLocalState = true;
-          setSync("☁️ Dados atualizados da nuvem às " + hora());
+          setSync("☁️ Dados atualizados da nuvem às " + hora() + contaTxt());
         } else if (rem && (+S.ts || localTs) > remoteTs) {
           cloudPush(); draw();
           setSync("☁️ Enviando a versão local mais recente…");
@@ -507,8 +512,10 @@ function listenCloud(uid) {
       draw();
     }
   }, function(err){
-    setSync("⚠️ Modo offline: usando dados locais");
+    CLOUD.ready = false;
+    setSync("⚠️ Não consegui ler a nuvem (" + ((err && (err.code || err.message)) || "erro") + "). Seus dados da nuvem estão preservados; vou tentar de novo.");
     draw();
+    CLOUD.retry = setTimeout(function(){ if (currentUserUid === uid && !CLOUD.ready) listenCloud(uid); }, 10000);
   });
 }
 
