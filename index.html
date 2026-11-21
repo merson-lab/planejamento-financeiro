@@ -784,11 +784,32 @@ function renderDashboardCharts(c, rs) {
 // ==========================================
 // BOTÃO VOLTAR DO ANDROID: fecha janelas e volta de aba antes de sair do app
 // ==========================================
-var BACK = { stack: [], ignore: 0, fila: [], lastTab: undefined, navPop: false, seq: 0 };
+var BACK = { stack: [], ignore: 0, fila: [], lastTab: undefined, navPop: false, seq: 0, nativo: false };
+// No APK (plugin @capacitor/app) o botão voltar chega direto aqui; no navegador usamos o histórico.
+function appPlugin() {
+  try {
+    var C = window.Capacitor; if (!C) return null;
+    if (C.Plugins && C.Plugins.App) return C.Plugins.App;
+    if (C.isPluginAvailable && C.registerPlugin && C.isPluginAvailable("App")) return C.registerPlugin("App");
+  } catch(e) {}
+  return null;
+}
+function backAndroid() {
+  var topo = BACK.stack.pop();
+  if (topo) { try { topo.fechar(); } catch(e) {} return; }
+  var AP = appPlugin(); if (AP && AP.exitApp) AP.exitApp();
+}
+function backIniciar() {
+  if (BACK.nativo) return true;
+  var AP = appPlugin();
+  if (AP && AP.addListener) { try { AP.addListener("backButton", backAndroid); BACK.nativo = true; } catch(e) {} }
+  return BACK.nativo;
+}
 function backEmpurrar(item) { try { history.pushState({ plano: item.id }, ""); } catch(e) {} }
 function backAbrir(id, fechar) {
   var item = { id: id, fechar: fechar };
   BACK.stack.push(item);
+  if (backIniciar()) return;
   if (BACK.ignore > 0) BACK.fila.push(item); else backEmpurrar(item);
 }
 // Chamado quando algo foi fechado pelo próprio app (botão, X, Esc): tira a entrada do histórico.
@@ -797,6 +818,7 @@ function backFechouPelaUI(id) {
   for (var k = BACK.stack.length - 1; k >= 0; k--) if (BACK.stack[k].id === id) { i = k; break; }
   if (i < 0) return;
   var item = BACK.stack.splice(i, 1)[0], fi = BACK.fila.indexOf(item);
+  if (BACK.nativo) return;
   if (fi >= 0) { BACK.fila.splice(fi, 1); return; }
   BACK.ignore++;
   try { history.back(); } catch(e) { BACK.ignore--; }
@@ -810,6 +832,7 @@ window.addEventListener("popstate", function(){
   var topo = BACK.stack.pop();
   if (topo) { try { topo.fechar(); } catch(e) {} }
 });
+backIniciar();
 
 function backRegistrarAba() {
   if (BACK.lastTab !== undefined && tab !== BACK.lastTab && !BACK.navPop) {
