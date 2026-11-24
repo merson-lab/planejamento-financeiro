@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Meu Financeiro | Painel</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Gráficos interativos -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <!-- Firebase SDKs -->
@@ -29,7 +29,7 @@ html[data-palette=light],html[data-palette=sage]{--bg:#f1f5f3;--card:#fff;--card
 html[data-palette=sage]{--bg:#f2f4ed;--c:#5f8a6b;--ok:#5f8a6b}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg);overflow-x:hidden;max-width:100%}
-body{margin:0;overflow-x:hidden;color:var(--ink);font:15px/1.45 "Sora",system-ui,sans-serif;max-width:760px;margin-inline:auto;min-height:100vh;background:radial-gradient(90% 40% at 100% -5%,color-mix(in srgb,var(--c) 20%,transparent),transparent 60%),var(--bg);padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(110px + env(safe-area-inset-bottom,0px))}
+body{margin:0;overflow-x:hidden;color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,system-ui,sans-serif;max-width:760px;margin-inline:auto;min-height:100vh;background:radial-gradient(90% 40% at 100% -5%,color-mix(in srgb,var(--c) 20%,transparent),transparent 60%),var(--bg);padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(110px + env(safe-area-inset-bottom,0px))}
 button,input,select,textarea{font:inherit;color:var(--ink)}
 button{cursor:pointer}
 h1,h2,h3{margin:0;letter-spacing:-.02em}
@@ -227,6 +227,29 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 @keyframes shine{0%{transform:skewX(-20deg) translateX(0)}55%,100%{transform:skewX(-20deg) translateX(450%)}}
 .au-main:active{transform:scale(.98)}
 @media(prefers-reduced-motion:reduce){.au-bg *,.au-card,.au-card>*,.au-card::before,.au-logo,.au-main,.au-main::after{animation:none!important}.au-bars i{transform:scaleY(.5)}.au-chart .line{stroke-dashoffset:0}.au-chart .fill{opacity:1}}
+.sec{margin:0 0 10px}
+.sec-btn{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:12px 14px;border-radius:20px;border:1px solid var(--line);text-align:left;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 8%,var(--card2)),var(--card2));transition:border-color .25s,box-shadow .25s,transform .12s}
+.sec-btn:active{transform:scale(.985)}
+.sec-ic{flex:none;width:38px;height:38px;border-radius:13px;display:grid;place-items:center;font-size:18px;background:color-mix(in srgb,var(--c) 15%,transparent)}
+.sec-tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.sec-tx b{font-size:14px;font-weight:700}
+.sec-tx small{margin-top:1px;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sec-chev{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);transition:transform .32s cubic-bezier(.2,.8,.2,1),background .25s}
+.sec-chev::before{content:"";width:7px;height:7px;border-right:2px solid var(--mut);border-bottom:2px solid var(--mut);transform:translateY(-2px) rotate(45deg)}
+.sec[data-open="1"]>.sec-btn{border-color:color-mix(in srgb,var(--c) 55%,var(--line));box-shadow:0 12px 30px -24px var(--c)}
+.sec[data-open="1"]>.sec-btn .sec-chev{transform:rotate(180deg);background:color-mix(in srgb,var(--c) 18%,var(--card))}
+.sec-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s cubic-bezier(.2,.8,.2,1)}
+.sec[data-open="1"]>.sec-body{grid-template-rows:1fr}
+.sec-in{min-height:0;overflow:hidden;visibility:hidden;transition:visibility 0s .32s}
+.sec[data-open="1"]>.sec-body>.sec-in{visibility:visible;transition-delay:0s}
+.sec-pad{padding-top:10px}
+.secm{margin:2px 0 6px}
+.sec-link{display:inline-flex;align-items:center;gap:8px;padding:7px 0;border:0;background:none;color:var(--v);font-weight:700;font-size:13px;text-align:left}
+.sec-lchev{width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .3s}
+.secm[data-open="1"]>.sec-link .sec-lchev{transform:rotate(45deg)}
+.sec-all{display:block;margin:8px auto 14px;padding:9px 18px;border-radius:999px;border:1px dashed var(--line);background:transparent;color:var(--mut);font-size:12px;font-weight:600}
+.reserva{margin:10px 0 14px;padding:14px}
+.reserva-v{margin:6px 0 2px;font-size:15px;font-weight:700;line-height:1.4}
 .hoje{padding:16px;margin-bottom:12px;border-radius:26px;border:1px solid color-mix(in srgb,var(--v) 40%,var(--line));background:radial-gradient(120% 100% at 0% 0%,color-mix(in srgb,var(--v) 18%,transparent),transparent 60%),var(--card)}
 .hoje-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .hoje-top b{font-size:12px;color:var(--mut);letter-spacing:.02em}
@@ -236,6 +259,7 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .hoje-grid small{display:block;font-size:10.5px;line-height:1.25;color:var(--mut)}
 .hoje-grid b{display:block;margin-top:4px;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hoje-row{font-size:13px;line-height:1.5}
+.hoje-dica{margin-top:6px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--v) 10%,transparent);color:var(--ink)}
 .guia{position:fixed;inset:0;z-index:2147483550;display:grid;place-items:center;padding:20px;overflow:auto;background:radial-gradient(70% 50% at 80% 10%,color-mix(in srgb,var(--c) 30%,transparent),transparent 65%),rgba(4,8,6,.94);animation:uiFade .25s ease both}
 .guia-box{position:relative;width:100%;max-width:420px;padding:28px 22px 22px;border-radius:30px;text-align:center;background:var(--card);border:1px solid color-mix(in srgb,var(--c) 30%,var(--line));box-shadow:0 30px 80px -40px var(--c);animation:uiPop .35s cubic-bezier(.2,.9,.2,1) both}
 .guia-skip{position:absolute;top:14px;right:16px;padding:6px 8px;border:0;background:none;color:var(--mut);font-size:13px;font-weight:600}
@@ -260,6 +284,14 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .ui-input{width:100%;margin-top:14px;padding:13px 14px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);font-size:16px;outline:0;color-scheme:dark}
 html[data-palette=light] .ui-input,html[data-palette=sage] .ui-input{color-scheme:light}
 .ui-input:focus{border-color:var(--c);box-shadow:0 0 0 4px rgba(61,220,151,.16)}
+.ui-campos{display:flex;flex-direction:column;margin-top:12px}
+.ui-lab{margin:10px 0 0;font-size:12px;font-weight:600;color:var(--mut)}
+.ui-campos .ui-input{margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--card);border:1px solid var(--line)}
+.chip b{font-weight:800}
+.chip-eu{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.chip-pote{border-color:color-mix(in srgb,var(--blue) 45%,var(--line))}
 .ui-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 .ui-btns button{min-width:92px;padding:12px 18px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-weight:600;font-size:14px}
 .ui-btns .ui-ok{border-color:transparent;background:linear-gradient(135deg,var(--v),var(--c));color:var(--onc)}
@@ -286,6 +318,9 @@ body{background:var(--bg)}
 .tabs{background:var(--bg)}
 .tabs button.on{background:rgba(166,255,61,.14)}
 .cards .cd,.big,.chart-panel,.hoje{background:var(--card)}
+.hoje-dica{background:rgba(166,255,61,.1)}
+.sec-btn{background:var(--card2)}
+.sec-ic{background:rgba(61,220,151,.14)}
 .guia{background:rgba(4,8,6,.96)}
 .guia-ic{background:rgba(61,220,151,.2)}
 .guia-box{border-color:var(--line)}
@@ -731,15 +766,17 @@ function destroyDashboardCharts() {
   });
 }
 function renderDashboardCharts(c, rs) {
-  if (!window.Chart || !document.getElementById("balanceChart")) return;
+  LASTCH = { c: c, rs: rs };
   destroyDashboardCharts();
+  if (!secAberta("graficos", false)) return;
+  if (!window.Chart || !document.getElementById("balanceChart")) return;
   var cs = getComputedStyle(document.documentElement);
   var V = function(n, f){ return (cs.getPropertyValue(n) || "").trim() || f; };
   var cMain = V("--c", "#3ddc97"), cAcc = V("--v", "#a6ff3d"), cInk = V("--ink", "#f1f5f3"), cMut = V("--mut", "#8b9893"), cCard = V("--card", "#141817"), cLine = V("--line", "#252c2a");
   var hexA = function(h, a){ var m = /^#?([0-9a-f]{6})$/i.exec(h); if (!m) return h; var n = parseInt(m[1], 16); return "rgba(" + (n>>16&255) + "," + (n>>8&255) + "," + (n&255) + "," + a + ")"; };
   var vgrad = function(ctx, col, a1, a2){ var ca = ctx.chart.chartArea; if (!ca) return hexA(col, a1); var g = ctx.chart.ctx.createLinearGradient(0, ca.top, 0, ca.bottom); g.addColorStop(0, hexA(col, a1)); g.addColorStop(1, hexA(col, a2)); return g; };
   Chart.defaults.color = cMut;
-  Chart.defaults.font.family = '"Sora", system-ui, sans-serif';
+  Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif';
   var gridColor = "rgba(139,152,147,.14)";
   var currency = function(v){ return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); };
   var tip = function(cb){ return {backgroundColor:cCard, borderColor:cLine, borderWidth:1, cornerRadius:14, padding:12, titleColor:cInk, bodyColor:cInk, boxPadding:6, usePointStyle:true, callbacks:cb}; };
@@ -762,14 +799,14 @@ function renderDashboardCharts(c, rs) {
   var expenseValues = expenseItems.slice(0,6).map(function(x){return x.value;});
   if (expenseItems.length>6) { expenseLabels.push("Outras"); expenseValues.push(expenseItems.slice(6).reduce(function(t,x){return t+x.value;},0)); }
   if (!expenseValues.length) { expenseLabels=["Sem contas cadastradas"]; expenseValues=[0]; }
-  var center = {id:"center", afterDraw:function(ch){ var t = ch.data.datasets[0].data.reduce(function(s,x){return s+x;},0), m = ch.getDatasetMeta(0).data[0]; if (!m || !t) return; var x = ch.ctx; x.save(); x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = cMut; x.font = '500 11px "Sora", sans-serif'; x.fillText("Total previsto", m.x, m.y - 13); x.fillStyle = cInk; x.font = '700 17px "Sora", sans-serif'; x.fillText(currency(t), m.x, m.y + 9); x.restore(); }};
+  var center = {id:"center", afterDraw:function(ch){ var t = ch.data.datasets[0].data.reduce(function(s,x){return s+x;},0), m = ch.getDatasetMeta(0).data[0]; if (!m || !t) return; var x = ch.ctx; x.save(); x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = cMut; x.font = '500 11px -apple-system, BlinkMacSystemFont, "Inter", sans-serif'; x.fillText("Total previsto", m.x, m.y - 13); x.fillStyle = cInk; x.font = '700 17px -apple-system, BlinkMacSystemFont, "Inter", sans-serif'; x.fillText(currency(t), m.x, m.y + 9); x.restore(); }};
   dashboardCharts.expenses = new Chart(document.getElementById("expenseChart"), {
     type:"doughnut",data:{labels:expenseLabels,datasets:[{data:expenseValues,backgroundColor:["#3ddc97","#34a8f0","#f2b84b","#ff7ab6","#b49aff","#a6ff3d","#ff8a5b","#5eead4"],borderColor:cCard,borderWidth:3,borderRadius:10,spacing:2,hoverOffset:12}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"72%",animation:{animateRotate:true,duration:1200,easing:"easeOutQuart"},plugins:{legend:{position:"bottom",labels:{usePointStyle:true,pointStyle:"circle",boxWidth:8,padding:13,font:{size:10}}},tooltip:tip({label:function(ctx){return ctx.label+": "+currency(ctx.parsed);}})}},
     plugins:[center]
   });
   var barCols = [cMain, "#b49aff", "#f2b84b"];
-  var labelsPlugin = {id:"valLabels", afterDatasetsDraw:function(ch){ var x = ch.ctx, ds = ch.data.datasets[0]; x.save(); x.textAlign = "center"; x.fillStyle = cInk; x.font = '600 11px "Sora", sans-serif'; ch.getDatasetMeta(0).data.forEach(function(b, i){ x.fillText(currency(ds.data[i]), b.x, b.y - 8); }); x.restore(); }};
+  var labelsPlugin = {id:"valLabels", afterDatasetsDraw:function(ch){ var x = ch.ctx, ds = ch.data.datasets[0]; x.save(); x.textAlign = "center"; x.fillStyle = cInk; x.font = '600 11px -apple-system, BlinkMacSystemFont, "Inter", sans-serif'; ch.getDatasetMeta(0).data.forEach(function(b, i){ x.fillText(currency(ds.data[i]), b.x, b.y - 8); }); x.restore(); }};
   dashboardCharts.payments = new Chart(document.getElementById("paymentChart"), {
     type:"bar",data:{labels:["Receitas previstas","Contas previstas","Já pagas"],datasets:[{data:[rs.iT||0,rs.tT||0,rs.pg||0],backgroundColor:function(ctx){return vgrad(ctx, barCols[ctx.dataIndex] || cMain, .95, .25);},borderColor:function(ctx){return barCols[ctx.dataIndex] || cMain;},borderWidth:{top:2,left:0,right:0,bottom:0},borderRadius:16,borderSkipped:false,maxBarThickness:56}]},
     options:{responsive:true,maintainAspectRatio:false,animation:{duration:1000,easing:"easeOutBack"},layout:{padding:{top:24}},plugins:{legend:{display:false},tooltip:tip({label:function(ctx){return currency(ctx.parsed.y);}})},scales:{x:{grid:{display:false},border:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,grid:{color:gridColor,drawTicks:false},border:{display:false},ticks:{padding:8,callback:function(v){return "R$ "+Number(v).toLocaleString("pt-BR");}}}}},
@@ -852,7 +889,7 @@ function uiNext() {
   var o = it.o, ov = document.createElement("div");
   ov.className = "ui-overlay"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
   ov.innerHTML = '<div class="ui-box">' + (o.title ? '<h3 class="ui-title"></h3>' : '') + '<p class="ui-msg"></p>' +
-    (o.input ? '<input class="ui-input" autocomplete="off">' : '') +
+    (o.campos ? '<div class="ui-campos"></div>' : (o.input ? '<input class="ui-input" autocomplete="off">' : '')) +
     '<div class="ui-btns">' + (o.cancel === false ? '' : '<button type="button" class="ui-cancel"></button>') + '<button type="button" class="ui-ok"></button></div></div>';
   if (o.title) ov.querySelector(".ui-title").textContent = o.title;
   ov.querySelector(".ui-msg").textContent = o.msg || "";
@@ -865,6 +902,18 @@ function uiNext() {
     inp.value = o.value == null ? "" : String(o.value);
     if (o.placeholder) inp.placeholder = o.placeholder;
   }
+  var inps = [];
+  if (o.campos) {
+    var cont = ov.querySelector(".ui-campos");
+    o.campos.forEach(function(cp){
+      var lab = document.createElement("label"), ip = document.createElement("input");
+      lab.className = "ui-lab"; lab.textContent = cp.rot || "";
+      ip.className = "ui-input"; ip.type = "text"; ip.setAttribute("inputmode", "decimal"); ip.setAttribute("autocomplete", "off");
+      ip.value = cp.valor == null ? "" : String(cp.valor); if (cp.ph) ip.placeholder = cp.ph;
+      cont.appendChild(lab); cont.appendChild(ip); inps.push(ip);
+    });
+  }
+  var temEntrada = !!(inp || inps.length);
   var idUi = "ui" + (++BACK.seq);
   function done(v, pelaVolta) {
     document.removeEventListener("keydown", onKey, true);
@@ -872,16 +921,20 @@ function uiNext() {
     if (pelaVolta !== true) backFechouPelaUI(idUi);
     it.resolve(v); uiNext();
   }
-  backAbrir(idUi, function(){ done(inp ? null : false, true); });
+  backAbrir(idUi, function(){ done(temEntrada ? null : false, true); });
   function onKey(e) {
-    if (e.key === "Escape" && cb) { e.preventDefault(); done(inp ? null : false); }
+    if (e.key === "Escape" && cb) { e.preventDefault(); done(temEntrada ? null : false); }
     else if (e.key === "Enter" && inp && document.activeElement === inp) { e.preventDefault(); okb.click(); }
+    else if (e.key === "Enter" && inps.length && inps.indexOf(document.activeElement) >= 0) {
+      e.preventDefault(); var k = inps.indexOf(document.activeElement);
+      if (k < inps.length - 1) inps[k + 1].focus(); else okb.click();
+    }
   }
-  okb.addEventListener("click", function(){ done(inp ? inp.value : true); });
-  if (cb) cb.addEventListener("click", function(){ done(inp ? null : false); });
+  okb.addEventListener("click", function(){ done(inps.length ? inps.map(function(x){ return x.value; }) : (inp ? inp.value : true)); });
+  if (cb) cb.addEventListener("click", function(){ done(temEntrada ? null : false); });
   document.addEventListener("keydown", onKey, true);
   document.body.appendChild(ov);
-  setTimeout(function(){ try { (inp || okb).focus(); if (inp && inp.select && o.input !== "date") inp.select(); } catch(e) {} }, 30);
+  setTimeout(function(){ try { var alvo = inp || inps[0] || okb; alvo.focus(); if ((inp || inps[0]) && alvo.select && o.input !== "date") alvo.select(); } catch(e) {} }, 30);
 }
 function uiAlert(msg, o) { return uiDialog(Object.assign({ msg: msg, cancel: false }, o || {})); }
 function uiConfirm(msg, o) { return uiDialog(Object.assign({ msg: msg }, o || {})); }
@@ -905,6 +958,7 @@ function novoReal(antes, f, v) {
   var val = v === "" ? null : (parseFloat(v) || 0);
   return { pote: f === "pote" ? val : (antes ? antes.pote : null), mim: f === "mim" ? val : (antes ? antes.mim : null) };
 }
+function ehHoje(dia) { var td = new Date(), p = S.ym.split("-"); return td.getFullYear() === +p[0] && td.getMonth() + 1 === +p[1] && td.getDate() === +dia; }
 function desfazerReal(ym, antes) {
   S.real = S.real || {};
   if (antes) S.real[ym] = antes; else delete S.real[ym];
@@ -1582,8 +1636,9 @@ function calc() {
       t0 = isThisMonth ? td.getDate() : (isPastMonth ? N + 1 : 0),
       miss = [], missN = 0;
   if (t0) {
-    for (d = 1; d < t0; d++) if (tipo === "diaria" && wd[d] && !S.paid[S.ym + "d" + d]) { miss[d] = true; missN++; }
-    lumps.forEach(function(e){ if (e.d < t0 && !S.paid[S.ym + e.id]) { e.miss = true; missN++; } });
+    var limMiss = (CALC_HOJE_MARCADA && isThisMonth) ? t0 + 1 : t0;   // variante do cartão "Hoje": hoje só conta se já foi marcado
+    for (d = 1; d < limMiss; d++) if (tipo === "diaria" && wd[d] && !S.paid[S.ym + "d" + d]) { miss[d] = true; missN++; }
+    lumps.forEach(function(e){ if (e.d < limMiss && !S.paid[S.ym + e.id]) { e.miss = true; missN++; } });
   }
   var lumpDays = {};
   lumps.forEach(function(e){ if (!e.miss && e.amt > 0) { var o = lumpDays[e.d] || (lumpDays[e.d] = { d: e.d, amt: 0, ids: [] }); o.amt += e.amt; o.ids.push(e.id); } });
@@ -1775,15 +1830,92 @@ function mao(ym) {
   S.ym = o; return (MC[ym] = v);
 }
 
+// ==========================================
+// SEÇÕES QUE ABREM/FECHAM NA ABA MÊS + RESERVA PRO MÊS QUE VEM
+// ==========================================
+var SEC_KEY = "plano-mes-abertas";
+var MESOP = (function(){ try { return JSON.parse(localStorage.getItem(SEC_KEY) || "{}") || {}; } catch(e) { return {}; } })();
+function secAberta(id, padrao) { return MESOP[id] === undefined ? !!padrao : !!MESOP[id]; }
+var LASTCH = null;
+var CALC_HOJE_MARCADA = false;
+function calcHojeMarcado() { CALC_HOJE_MARCADA = true; try { return calc(); } finally { CALC_HOJE_MARCADA = false; } }
+function secao(id, ic, titulo, resumo, html, padrao) {
+  var ab = secAberta(id, padrao);
+  return '<div class="sec" data-sec="' + id + '" data-open="' + (ab ? "1" : "0") + '">' +
+    '<button type="button" class="sec-btn" data-a="sec" data-i="' + id + '" aria-expanded="' + (ab ? "true" : "false") + '">' +
+      '<span class="sec-ic" aria-hidden="true">' + ic + '</span><span class="sec-tx"><b>' + titulo + '</b>' + (resumo ? '<small>' + resumo + '</small>' : '') + '</span><span class="sec-chev" aria-hidden="true"></span></button>' +
+    '<div class="sec-body"><div class="sec-in"><div class="sec-pad">' + html + '</div></div></div></div>';
+}
+function secMini(id, titulo, html, padrao) {
+  var ab = secAberta(id, padrao);
+  return '<div class="sec secm" data-sec="' + id + '" data-open="' + (ab ? "1" : "0") + '"><button type="button" class="sec-link" data-a="sec" data-i="' + id + '" aria-expanded="' + (ab ? "true" : "false") + '"><span class="sec-lchev" aria-hidden="true"></span>' + titulo + '</button>' +
+    '<div class="sec-body"><div class="sec-in">' + html + '</div></div></div>';
+}
+function secPersistir() { try { localStorage.setItem(SEC_KEY, JSON.stringify(MESOP)); } catch(e) {} }
+function secGraficos() { if (LASTCH) renderDashboardCharts(LASTCH.c, LASTCH.rs); }
+// Abre/fecha no próprio lugar (sem redesenhar a tela): a página não pula e a animação fica suave.
+function secDefinir(el, abrir) {
+  var id = el.getAttribute("data-sec"), b = el.querySelector("[data-a=sec]");
+  el.setAttribute("data-open", abrir ? "1" : "0");
+  if (b) b.setAttribute("aria-expanded", abrir ? "true" : "false");
+  MESOP[id] = abrir;
+  if (id === "graficos") { if (abrir) secGraficos(); else destroyDashboardCharts(); }
+}
+function secToggle(id) {
+  var el = document.querySelector('.sec[data-sec="' + id + '"]'); if (!el) return;
+  secDefinir(el, el.getAttribute("data-open") !== "1"); secPersistir();
+}
+function secTodos() {
+  var todas = document.querySelectorAll(".sec[data-sec]"), algumaFechada = false, i;
+  for (i = 0; i < todas.length; i++) if (todas[i].getAttribute("data-open") !== "1") algumaFechada = true;
+  for (i = 0; i < todas.length; i++) secDefinir(todas[i], algumaFechada);
+  secPersistir();
+}
+function proxYM(ym) { var p = ym.split("-"), d = new Date(+p[0], +p[1], 1); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2); }
+// Calcula um mês começando com um pote hipotético (sem alterar nenhum dado do usuário).
+function simularMes(ym, poteIni) {
+  var o = S.ym, i0 = ini0, m0 = mim0;
+  S.ym = ym; ini0 = function(){ return poteIni; }; mim0 = function(){ return 0; };
+  try { return calc(); } finally { S.ym = o; ini0 = i0; mim0 = m0; }
+}
+function contasNoInicio(c2, nDias) {
+  var x = 0;
+  (c2.L || []).forEach(function(b){
+    if (b.t === "dd") { for (var d = 1; d <= nDias; d++) if (b.on && b.on[d]) x += +b.a || 0; }
+    else if (b.t === "s") (b.weekOccurrences || []).forEach(function(w){ if (w.d >= 1 && w.d <= nDias) x += +b.a || 0; });
+    else if (Math.min(b.d || 1, c2.N) <= nDias) x += +b.a || 0;
+  });
+  return x;
+}
+function reservaCard(c) {
+  try {
+    var nDias = 10, P = Math.max(0, Number(c.endPote) || 0), c2 = simularMes(proxYM(S.ym), P), X = contasNoInicio(c2, nDias),
+        cobre = P >= X - 0.005, falta = Math.max(0, X - P), ab = secAberta("reserva", false), det = "";
+    if (ic("tipoRenda") === "diaria") {
+      var c0 = simularMes(proxYM(S.ym), 0);
+      det += 'Com essa reserva, no começo do mês que vem você separa <b>' + R(c2.g) + '</b> por diária pro pote. Sem reserva, seriam <b>' + R(c0.g) + '</b>. ';
+    }
+    det += 'Contei as contas dos primeiros ' + nDias + ' dias do mês que vem (inclusive as diárias e semanais). Parte disso pode ser paga com a renda que entrar nesses dias; a reserva serve para você não depender só dela. É só um aviso: nada sai do seu “pra você” sozinho. Se faltar, você decide se separa um pouco mais por diária ainda neste mês.';
+    return '<div class="card reserva" style="border-color:' + (cobre ? "var(--ok)" : "#d97706") + '">' +
+      '<small style="color:var(--mut);font-weight:700">🛟 RESERVA PRO MÊS QUE VEM</small>' +
+      '<div class="reserva-v" style="color:' + (cobre ? "var(--ok)" : "#d97706") + '">' +
+        (X <= 0.005 ? "✅ Nenhuma conta nos primeiros " + nDias + " dias do mês que vem." : (cobre ? "✅ A reserva cobre o começo do mês que vem." : "⚠️ A reserva cobre " + Math.round(P / X * 100) + "% das contas dos primeiros " + nDias + " dias. Faltam " + R(falta) + ".")) + '</div>' +
+      '<div class="bar" style="margin:10px 0 2px"><i style="width:' + Math.min(100, X > 0.005 ? Math.round(P / X * 100) : 100) + '%"></i></div>' +
+      '<div class="hoje-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><small>Pote previsto no fim do mês</small><b>' + R(P) + '</b></div><div><small>Contas dos primeiros ' + nDias + ' dias</small><b>' + R(X) + '</b></div></div>' +
+      secMini("reserva", "Como isso é calculado", '<div class="note">' + det + '</div>', false) + '</div>';
+  } catch (e) { return ""; }
+}
+
 function vMes() {
   var c = calc(),
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
   
   h += "<!--HOJE-->";
-  h += '<div class="note card"><b>Como o Mês se conecta:</b> aqui você acompanha o resumo e as projeções. As marcações de recebimentos e pagamentos no Calendário alteram os cálculos; Renda define valores e frequência, e Contas define despesas e vencimentos. Os valores previstos podem mudar quando você confirma ou altera eventos.</div>';
+  h += secao("ajuda", "ℹ️", "Como o Mês funciona", "o que cada parte desta tela faz", '<div class="note card">Aqui você acompanha o resumo e as projeções. As marcações de recebimentos e pagamentos no Calendário alteram os cálculos; Renda define valores e frequência, e Contas define despesas e vencimentos. Os valores previstos podem mudar quando você confirma ou altera eventos.</div>', false);
   h += '<button class="add" data-a="tab" data-i="2" style="margin:0 0 12px;background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
   var td = new Date();
   var isCurrentMonth = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M;
+  var cHM = isCurrentMonth ? calcHojeMarcado() : c;
   if (isCurrentMonth) {
     var hojeD = td.getDate();
     var avisosHoje = [];
@@ -1835,29 +1967,29 @@ function vMes() {
        '</div>' +
        (function(){
          var hojeSaldo = new Date(), diaSaldo = (hojeSaldo.getFullYear() === c.Y && hojeSaldo.getMonth()+1 === c.M) ? hojeSaldo.getDate() : (S.ym < currentYM ? c.N : 0),
-             acumuladoMim = diaSaldo > 0 && c.days && c.days[diaSaldo-1] ? c.days[diaSaldo-1].mim : 0,
-             saldoAnteriorMim = diaSaldo > 1 && c.days && c.days[diaSaldo-2] ? c.days[diaSaldo-2].mim : 0,
+             acumuladoMim = diaSaldo > 0 && cHM.days && cHM.days[diaSaldo-1] ? cHM.days[diaSaldo-1].mim : 0,
+             saldoAnteriorMim = diaSaldo > 1 && cHM.days && cHM.days[diaSaldo-2] ? cHM.days[diaSaldo-2].mim : 0,
              variacaoDiaMim = acumuladoMim - saldoAnteriorMim;
          return '<div class="card" style="border:2px solid var(--v);margin:10px 0 14px;padding:14px">' +
            '<small style="color:var(--mut);font-weight:700">DINHEIRO ACUMULADO PRA VOCÊ ' + (diaSaldo ? 'ATÉ O DIA ' + diaSaldo : '') + '</small>' +
            '<div style="font-size:30px;font-weight:850;color:var(--v);margin:5px 0">' + R(acumuladoMim) + '</div>' +
-           '<div class="note">Esse é o saldo planejado que vai se juntando dia após dia: soma a sua parte das rendas e desconta gastos e valores autorizados para completar o Pote.</div>' +
-           '<div class="attention-note"><b>⚠ Ponto de atenção:</b> é uma previsão baseada no que está cadastrado e marcado. Para saber o dinheiro realmente disponível, confira o saldo real e o extrato.</div>' +
+           secMini("entenda", "Entenda esse número", '<div class="note">Esse é o saldo planejado que vai se juntando dia após dia: soma a sua parte das rendas e desconta gastos e valores autorizados para completar o Pote.</div><div class="attention-note"><b>⚠ Ponto de atenção:</b> é uma previsão baseada no que está cadastrado e marcado. Para saber o dinheiro realmente disponível, confira o saldo real e o extrato.</div>', false) +
            (diaSaldo ? '<div class="note" style="margin-top:6px">' + (variacaoDiaMim >= 0 ? 'Hoje aumentou ' : 'Hoje diminuiu ') + '<b>' + R(Math.abs(variacaoDiaMim)) + '</b> em relação a ontem.</div>' : '<div class="note">O acumulado aparece quando houver dias calculados neste mês.</div>') +
            '</div>';
        })() +
-       '<div class="analytics-kicker">ANÁLISE INTELIGENTE</div><h2 class="analytics-heading">Visão dos seus números</h2>' +
+       (isCurrentMonth ? reservaCard(c) : "") +
+       secao("graficos", "📊", "Gráficos do mês", "evolução, contas e comparativo", ('<div class="analytics-kicker">ANÁLISE INTELIGENTE</div><h2 class="analytics-heading">Visão dos seus números</h2>' +
        '<div class="charts-grid">' +
        '<section class="chart-panel wide"><h3 class="chart-title">Evolução do dinheiro ao longo do mês</h3><p class="chart-subtitle">Acompanhe o pote das contas e o valor disponível para você, dia a dia</p><div class="chart-wrap"><canvas id="balanceChart" aria-label="Gráfico da evolução dos saldos"></canvas></div><div class="attention-note"><b>⚠ Ponto de atenção:</b> as linhas mostram saldos previstos no fechamento de cada dia, não comprovantes bancários. A linha em degraus indica que o saldo muda nas datas de entradas e pagamentos. Se uma renda não cair ou uma conta for paga em outra data, atualize o calendário.</div></section>' +
        '<section class="chart-panel"><h3 class="chart-title">Distribuição das contas</h3><p class="chart-subtitle">Veja quais contas representam maior parte dos gastos previstos</p><div class="chart-wrap compact"><canvas id="expenseChart" aria-label="Gráfico de distribuição das contas"></canvas></div><div class="attention-note"><b>⚠ Ponto de atenção:</b> mostra a participação de cada conta no total previsto do mês. Não significa que todas já foram pagas. Contas recorrentes são somadas conforme as ocorrências previstas.</div></section>' +
        '<section class="chart-panel"><h3 class="chart-title">Comparativo financeiro</h3><p class="chart-subtitle">Receitas, contas previstas e pagamentos realizados</p><div class="chart-wrap compact"><canvas id="paymentChart" aria-label="Gráfico comparativo financeiro"></canvas></div><div class="attention-note"><b>⚠ Ponto de atenção:</b> as barras têm significados diferentes: receitas previstas são o total estimado de entradas; contas previstas são o total de despesas do mês; já pagas é apenas a parte das despesas confirmada como paga. Compare os valores considerando essa diferença.</div></section>' +
-       '</div>' +
+       '</div>'), false) +
        '<div class="bar"><i style="width:' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '%"></i></div>' +
        '<div class="note" style="margin-top:0">' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '% das contas do mês já pagas</div>' +
        '<div class="note">Previsão de sobra no fim do mês: <b>' + R(mc + iT - tT) + '</b>' +
        (ic("tipoRenda") === "diaria" ? ' · ' + nd + ' de ' + c.w + ' diárias marcadas' : '') +
        (Math.abs(mc) > 0.005 ? '<br>Inclui ' + R(mc) + ' que sobrou dos meses anteriores.' : '') + '</div>' +
-       '<div class="attention-note"><b>⚠ Ponto de atenção:</b> a sobra final é uma projeção matemática. Ela pode mudar se você alterar valores, datas, recebimentos, pagamentos ou gastos pessoais.</div>';
+       '<div class="attention-note"><b>⚠</b> A sobra final é uma projeção: muda se você alterar valores, datas ou marcações.</div>';
 
   var ban = "", td1 = isCurrentMonth ? td.getDate() : 1,
       fut = (c.days0 || []).filter(function(x){ return x.sh > 0.005 && x.d >= td1; }),
@@ -1938,10 +2070,10 @@ function vMes() {
   }
   var rl2 = (S.real || {})[S.ym], snap = "";
   if (isCurrentMonth) {
-    snap = '<div class="card fld"><b>🔄 Acertar com a realidade</b><div class="note" style="margin:4px 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
+    snap = secao("acertar", "🔄", "Acertar com a realidade", rl2 ? "plano refeito a partir do dia " + rl2.d : "use se o dinheiro não bate", '<div class="card fld"><div class="note" style="margin:0 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
            '<div class="g2"><div><label>Tenho no pote agora (R$)</label>' + inp("r","0","pote", rl2 && rl2.pote != null ? rl2.pote : "", "number") + '</div>' +
            '<div><label>Tenho pra mim agora (R$)</label>' + inp("r","0","mim", rl2 && rl2.mim != null ? rl2.mim : "", "number") + '</div></div>' +
-           (rl2 ? '<div class="note">Plano refeito a partir do dia ' + rl2.d + ' com o que você informou.</div><button class="del" data-a="rclr" style="margin-top:0">Voltar ao plano original</button>' : '') + '</div>';
+           (rl2 ? '<div class="note">Plano refeito a partir do dia ' + rl2.d + ' com o que você informou.</div><button class="del" data-a="rclr" style="margin-top:0">Voltar ao plano original</button>' : '') + '</div>', !!rl2);
   }
 
   var permH = "", pend = [], decided = [], pendTot = 0;
@@ -2017,7 +2149,9 @@ function vMes() {
   var hojeCard = "";
   if (isCurrentMonth) {
     try {
-      var dHj = (c.days || [])[td.getDate() - 1],
+      var dHj = (cHM.days || [])[td.getDate() - 1],
+          diaHj = td.getDate(), pendHj = ic("tipoRenda") === "diaria" && c.days && c.days[diaHj - 1] && c.days[diaHj - 1].wk && !S.paid[S.ym + "d" + diaHj],
+          vPoteHj = Math.min(Number(ic("dia")) || 0, Math.max(0, gDoDia(c, diaHj))), vMimHj = Math.max(0, (Number(ic("dia")) || 0) - vPoteHj),
           stTxt = fut.length ? (futMin < -0.005 ? "🚨 Vai faltar dinheiro neste mês" : "⚠️ Vai precisar tirar da sua sobra") : (pas.length ? "ℹ️ Daqui pra frente os vencimentos estão cobertos" : "✅ O pote cobre tudo"),
           stCor = fut.length ? (futMin < -0.005 ? "var(--bad)" : "#d97706") : "var(--ok)",
           proxTxt = nx ? "<b>" + nx.n + "</b> · " + (nx.d === td.getDate() ? "hoje" : "dia " + nx.d) + " · " + R(nx.a) : "nenhuma conta pendente neste mês",
@@ -2030,10 +2164,11 @@ function vMes() {
           '<div><small>Pra você (acumulado)</small><b>' + (dHj ? R(dHj.mim) : "—") + '</b></div>' +
         '</div>' +
         '<div class="hoje-row">Próxima conta: ' + proxTxt + '</div>' +
+        (pendHj ? '<div class="hoje-row hoje-dica">💡 Marque a diária de hoje como recebida: <b>' + R(vPoteHj) + '</b> vão pro pote e <b>' + R(vMimHj) + '</b> ficam pra você.</div>' : '') +
         (nAv ? '<div class="hoje-row" style="color:var(--mut)">🔔 ' + nAv + (nAv === 1 ? ' aviso' : ' avisos') + ' logo abaixo</div>' : '') + '</div>';
     } catch (e5) { hojeCard = ""; }
   }
-  return h.replace("<!--BAN-->", ban + spend + permH + snap).replace("<!--HOJE-->", hojeCard) + '<button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
+  return h.replace("<!--BAN-->", ban + spend + permH + snap).replace("<!--HOJE-->", hojeCard) + '<button type="button" class="sec-all" data-a="sectodos">↕ Abrir ou fechar todas as seções</button><button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
 }
 
 function mkGrid(c, pre, on) {
@@ -2412,15 +2547,16 @@ function vCalendario() {
     var dn2 = S.paid[S.ym + "d" + selDay];
     h += '<button class="row' + (dn2 ? " done" : "") + '" data-a="tog" data-i="d' + selDay + '" style="margin-top:8px;">' +
          '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>' + (diaExtra(selDay) ? 'Diária extra' : 'Diária de Trabalho') + '</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
+         '<span class="grow"><b>' + (diaExtra(selDay) ? 'Diária extra' : 'Diária de Trabalho') + '</b><small>Entra ' + R(ic("dia")) + ' · ' + R(Math.min(Number(ic("dia")) || 0, Math.max(0, gDoDia(c, selDay)))) + ' pro pote e ' + R(Math.max(0, (Number(ic("dia")) || 0) - gDoDia(c, selDay))) + ' pra você</small></span>' +
          '</button>';
     var parteMarcada = !!((S.separado || {})[S.ym + "d" + selDay]);
-    var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - gDoDia(c, selDay));
+    var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - gDoDia(c, selDay)), valorPote = Math.max(0, Number(ic("dia") || 0) - valorMinhaParte);
     h += '<button class="row' + (parteMarcada ? " done" : "") + '" data-a="separar" data-i="' + selDay + '" style="margin-top:6px;align-items:flex-start;">' +
          '<span class="chk">' + (parteMarcada ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>Minha parte do dia</b><small>Valor planejado para você: <b>' + R(valorMinhaParte) + '</b></small><small>' +
-         (parteMarcada ? '✓ Você confirmou que separou/recebeu ' + R(valorMinhaParte) + '.' : 'Marque quando separar ou receber esse valor.') +
-         '</small></span><span class="amt in">' + R(valorMinhaParte) + '</span></button>';
+         '<span class="grow"><b>Minha parte do dia</b>' +
+         '<span class="chips"><span class="chip chip-eu">💚 Pra você <b>' + R(valorMinhaParte) + '</b></span><span class="chip chip-pote">🫙 Pro pote <b>' + R(valorPote) + '</b></span></span>' +
+         '<small>' + (parteMarcada ? '✓ Você confirmou: ' + R(valorMinhaParte) + ' pra você e ' + R(valorPote) + ' no pote.' : 'Marque quando separar o dinheiro do pote e guardar a sua parte.' + '') +
+         '</small></span></button>';
   }
   
   if (selInfo.ev.length === 0) {
@@ -2543,7 +2679,7 @@ document.addEventListener("change", async function(e){
     }
     S.real = S.real || {};
     var rr = S.real[ymR] || (S.real[ymR] = { d: 1, pote: null, mim: null });
-    rr.d = new Date().getDate(); rr.pote = nv.pote; rr.mim = nv.mim;
+    rr.d = new Date().getDate(); rr.pote = nv.pote; rr.mim = nv.mim; delete rr.auto; delete rr.dAnt;
     if (rr.pote === null && rr.mim === null) delete S.real[ymR];
     else avisoReal = { ym: ymR, antes: antesR, d: rr.d };
   }
@@ -2586,6 +2722,8 @@ document.addEventListener("click", async function(e){
   }
   else if (a == "selday") selDay = +i;
   else if (a == "guia") { abrirGuia(true); return; }
+  else if (a == "sec") { secToggle(i); return; }
+  else if (a == "sectodos") { secTodos(); return; }
   else if (a == "tvenc") VOPEN = !VOPEN;
   else if (a == "tog") {
     var k = S.ym + i, vaiMarcar = !S.paid[k], rawKey = i, detalhe = detalhePagamento(k);
